@@ -118,3 +118,23 @@ func test_braking_100_0() -> void:
 	check(max_dev < 0.5, "keeps a straight line while braking (lateral %.3f m)" % max_dev)
 	check(max_yaw < 0.05, "no yaw under braking (%f)" % max_yaw)
 	cleanup()
+
+func test_accel_plain_launch_no_launch_control() -> void:
+	# the same 0-100 with the throttle simply floored from a standstill (auto clutch, TCS)
+	make_world()
+	spawn(Vector3(0, 0.02, 0))
+	await settle(1.0)
+	var t := 0.0
+	var n := 0
+	var t100 := -1.0
+	while t < 8.0 and t100 < 0.0:
+		car.drive(1.0, 0.0, 0.0)
+		await tree.physics_frame
+		wrap_z()
+		n += 1
+		t = n / 240.0
+		if car.speed_kmh >= 100.0:
+			t100 = t
+	metric("t_0_100_plain_s", t100)
+	check(t100 > 0.0 and t100 < 4.2, "0-100 km/h without launch control < 4.2 s (got %.2f)" % t100)
+	cleanup()

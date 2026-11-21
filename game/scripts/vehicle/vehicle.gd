@@ -322,6 +322,18 @@ func set_auto_gearbox(on: bool) -> void:
 	drivetrain.auto = on
 
 
+## Select reverse (only when nearly stopped) / back to first gear.
+func set_reverse(on: bool) -> void:
+	if drivetrain == null:
+		return
+	if on and drivetrain.gear >= 0 and absf(fwd_speed) < 1.5:
+		drivetrain.gear = -1
+		drivetrain.shifting = false
+	elif not on and drivetrain.gear < 0 and fwd_speed > -1.5:
+		drivetrain.gear = 1
+		drivetrain.shifting = false
+
+
 ## Place the car (ground contact height is handled by the suspension: spawn slightly above the ground).
 func reset_to(xf: Transform3D, vel: Vector3 = Vector3.ZERO) -> void:
 	global_transform = xf

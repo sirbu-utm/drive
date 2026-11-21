@@ -40,13 +40,13 @@ static func add_ground(parent: Node, extent: float = 1200.0, surface: String = "
 ## A plane inclined by `pitch_deg` (nose up positive when driving towards -Z) that blends from the flat ground.
 ## Returns the body. The incline starts at z = z0 and continues towards -Z.
 static func add_incline(parent: Node, z0: float, length: float, pitch_deg: float, width: float = 30.0,
-		surface: String = "asphalt", visible: bool = false) -> StaticBody3D:
+		surface: String = "asphalt", visible: bool = false, x: float = 0.0) -> StaticBody3D:
 	var a := deg_to_rad(pitch_deg)
 	var thick := 2.0
 	# centre of the top surface segment
 	var cz := z0 - cos(a) * length * 0.5
 	var cy := sin(a) * length * 0.5
-	var pos := Vector3(0.0, cy, cz) - Vector3(0.0, cos(a), -sin(a)).rotated(Vector3.RIGHT, 0.0) * 0.0
+	var pos := Vector3(x, cy, cz)
 	var n := Vector3(0.0, cos(a), sin(a))          # surface normal (rotated about X)
 	pos -= n * thick * 0.5
 	return add_box(parent, Vector3(width, thick, length), pos, Vector3(rad_to_deg(a), 0.0, 0.0), surface, Color(0.3, 0.28, 0.25), visible)
@@ -71,3 +71,8 @@ static func add_light_and_sky(parent: Node) -> void:
 	sun.rotation_degrees = Vector3(-50, -30, 0)
 	sun.shadow_enabled = true
 	parent.add_child(sun)
+
+
+## A flat patch of another surface (top at y = 0.002 so it wins over the ground in the wheel casts).
+static func add_surface_patch(parent: Node, center_xz: Vector2, size_xz: Vector2, surface: String, color: Color, visible: bool = true) -> StaticBody3D:
+	return add_box(parent, Vector3(size_xz.x, 0.2, size_xz.y), Vector3(center_xz.x, -0.098, center_xz.y), Vector3.ZERO, surface, color, visible)

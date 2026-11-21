@@ -55,11 +55,12 @@ const TCS_MARGIN := 0.95
 func update_tcs(dt: float, rear: Array, speed: float, tire: TireModel, dtrain: Drivetrain) -> void:
 	var peak := 0.0
 	var kmax := 0.0
+	var dir := signf(dtrain.ratio()) if dtrain.ratio() != 0.0 else 1.0
 	for w: VehicleWheel in rear:
 		if not w.in_contact:
 			continue
 		peak += tire.peak_long(w.fz, w.surface["mu"])
-		var s := w.omega * w.radius - w.vx
+		var s := (w.omega * w.radius - w.vx) * dir
 		kmax = maxf(kmax, s / maxf(absf(w.vx), 5.0))
 	traction_torque = peak * p.wheel_radius * TCS_MARGIN
 	if not tcs_on:

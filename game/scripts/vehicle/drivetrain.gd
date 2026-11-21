@@ -17,6 +17,7 @@ var wheel_torque := 0.0         # total torque delivered to the rear wheels (aft
 var limiter := false
 var launching := false
 var launch_ready := false
+var _launch_latch := false
 var brake_pedal := 0.0
 var throttle := 0.0             # throttle after assists (0..1)
 var throttle_pedal := 0.0
@@ -148,7 +149,7 @@ func step(dt: float, rw: Array, speed: float, tcs_scale: float, traction_torque:
 	launching = g != 0.0 and not clutch_locked and speed < 30.0 and throttle_pedal > 0.05 and (gear == 1 or gear == -1) and omega_e > absf(g) * 0.5 * (absf(rw[0].omega) + absf(rw[1].omega))
 	if launching:
 		var cap_t := traction_torque / (absf(g) * p.driveline_efficiency)
-		var r_t := p.launch_rpm
+		var r_t := lerpf(2600.0, p.launch_rpm, clampf(throttle_pedal, 0.0, 1.0))
 		var wot := maxf(p.torque_at(rpm), 50.0)
 		thr = minf(thr, clampf((cap_t * 1.05 + 25.0 + 0.30 * (r_t - rpm)) / wot, 0.0, 1.0))
 	if launch_ready:
@@ -175,13 +176,21 @@ func step(dt: float, rw: Array, speed: float, tcs_scale: float, traction_torque:
 	var dT := clampf(kd * dw_new, -lock, lock)
 
 	var cap := p.clutch_capacity * clampf(engage_cmd, 0.0, 1.0) * capacity_scale
+	if not launching:
+		_launch_latch = false
 	if launching:
 		# once the engine is revved, the clutch is fully available; it never pulls the engine down faster than the
 		# engine can deliver, and never transmits more than the tyres can carry
-		if throttle_pedal > 0.4 and rpm > 2700.0 and not launch_ready:
+		if engage_cmd > 0.02:
+			_launch_latch = true
+		if rpm < 1300.0 or throttle_pedal < 0.2 or launch_ready:
+			_launch_latch = false
+		if _launch_latch:
 			cap = p.clutch_capacity * capacity_scale
 		cap = minf(cap, traction_torque / (absf(g) * eta0()) * 1.05)
-		cap = minf(cap, p.torque_at(rpm) * 0.97)
+		# the clutch only gives what the engine can spare above the launch rpm: it lets the engine rev up first
+		var r_launch := lerpf(2600.0, p.launch_rpm, clampf(throttle_pedal, 0.0, 1.0))
+		cap = minf(cap, maxf(maxf(t_eng, 0.0) * 1.03 + 25.0 - 0.20 * maxf(r_launch - rpm, 0.0), 0.0))
 	cap *= clampf(tcs_scale * 1.15, 0.15, 1.0) if (g != 0.0 and absf(g) > 6.0) else 1.0
 	var eta := p.driveline_efficiency
 	var tc := 0.0
