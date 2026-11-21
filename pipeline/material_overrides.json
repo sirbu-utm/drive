@@ -1,0 +1,6 @@
+{
+  "_comment": "Manual fixes for the heuristics in build_car.py. Keys are body part ids (index-connected components of the body OBJ, see build/car_debug/parts.json), values are material classes / output nodes. wheel_parts: ids of the wheel OBJ components.",
+  "parts": {},
+  "nodes": {},
+  "wheel_parts": {}
+}

@@ -1,0 +1,167 @@
+{
+  "generator": "pipeline/build_car.py",
+  "axis_convention": "Godot: forward = -Z, right = +X, up = +Y. Origin on the ground plane, between the axles, on the centre line.",
+  "wheelbase": 2.686668386497368,
+  "wheel_radius": 0.3225869983434677,
+  "wheel_width": 0.3281780481338501,
+  "track_front": 1.580737761259079,
+  "track_rear": 1.6203629291057586,
+  "wheels": {
+    "FL": {
+      "pos": [
+        -0.7903688806295395,
+        0.3225869983434677,
+        -1.343334193248684
+      ],
+      "position": [
+        -0.7903688806295395,
+        0.3225869983434677,
+        -1.343334193248684
+      ],
+      "radius": 0.3225869983434677,
+      "width": 0.3281780481338501,
+      "side": "left",
+      "axle": "front"
+    },
+    "FR": {
+      "pos": [
+        0.7903688806295395,
+        0.3225869983434677,
+        -1.343334193248684
+      ],
+      "position": [
+        0.7903688806295395,
+        0.3225869983434677,
+        -1.343334193248684
+      ],
+      "radius": 0.3225869983434677,
+      "width": 0.3281780481338501,
+      "side": "right",
+      "axle": "front"
+    },
+    "RL": {
+      "pos": [
+        -0.8101814645528793,
+        0.3225869983434677,
+        1.343334193248684
+      ],
+      "position": [
+        -0.8101814645528793,
+        0.3225869983434677,
+        1.343334193248684
+      ],
+      "radius": 0.3225869983434677,
+      "width": 0.3281780481338501,
+      "side": "left",
+      "axle": "rear"
+    },
+    "RR": {
+      "pos": [
+        0.8101814645528793,
+        0.3225869983434677,
+        1.343334193248684
+      ],
+      "position": [
+        0.8101814645528793,
+        0.3225869983434677,
+        1.343334193248684
+      ],
+      "radius": 0.3225869983434677,
+      "width": 0.3281780481338501,
+      "side": "right",
+      "axle": "rear"
+    }
+  },
+  "hub_height": 0.3225869983434677,
+  "ground_clearance": 0.08865979313850403,
+  "markers": {
+    "Exhaust_L": [
+      -0.377682089805603,
+      0.28808072209358215,
+      2.034297466278076
+    ],
+    "Exhaust_R": [
+      0.377682089805603,
+      0.28808072209358215,
+      2.034297466278076
+    ],
+    "Headlight_L": [
+      -0.6386377811431885,
+      0.5385971665382385,
+      -2.130949020385742
+    ],
+    "Headlight_R": [
+      0.6386377811431885,
+      0.5385971069335938,
+      -2.130949020385742
+    ]
+  },
+  "bbox_min": [
+    -0.9979488104581833,
+    0.08865979313850403,
+    2.0512565778774743
+  ],
+  "bbox_max": [
+    0.9979488402605057,
+    1.0785329937934875,
+    -2.2177620721774574
+  ],
+  "size": {
+    "width": 1.995897650718689,
+    "length": 4.269018650054932,
+    "height": 1.0785329937934875
+  },
+  "nodes": [
+    "Body",
+    "Caliper_FL",
+    "Caliper_FR",
+    "Caliper_RL",
+    "Caliper_RR",
+    "Mirror_L",
+    "Mirror_R",
+    "Taillight_L1",
+    "Taillight_L2",
+    "Taillight_L3",
+    "Taillight_R1",
+    "Taillight_R2",
+    "Taillight_R3",
+    "Wheel_FL",
+    "Wheel_FR",
+    "Wheel_RL",
+    "Wheel_RR",
+    "Wing",
+    "Headlight_L",
+    "Headlight_R",
+    "Exhaust_L",
+    "Exhaust_R"
+  ],
+  "material_classes": [
+    "black_plastic",
+    "brake_disc",
+    "caliper",
+    "carbon",
+    "chrome",
+    "exhaust",
+    "glass",
+    "headlight_bulb",
+    "headlight_chrome",
+    "headlight_glass",
+    "interior",
+    "paint",
+    "rim",
+    "taillight",
+    "tire"
+  ],
+  "arch": {
+    "front_axle_y_source": -2.0559071659320667,
+    "rear_axle_y_source": 0.6307612205653013,
+    "centre_x_source": 0.7161178141832352,
+    "ground_z_source": -0.5060215592384338,
+    "fender_lip_half_width_front": 0.9744579046964645,
+    "fender_lip_half_width_rear": 0.9942704886198044,
+    "tire_inset": 0.02
+  },
+  "source": {
+    "body_parts": 440
+  }
+}
