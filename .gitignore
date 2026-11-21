@@ -1,0 +1,10 @@
+tools/
+.godot/
+build/
+*.tmp
+*.import.bak
+__pycache__/
+*.blend1
+.venv/
+# raw source archives (kept locally only)
+koenigsegg-ccgt.zip
