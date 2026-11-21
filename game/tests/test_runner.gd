@@ -16,12 +16,18 @@ func _run() -> void:
 		filter = a
 	var files: Array[String] = []
 	var dir := DirAccess.open("res://tests")
+	var only_test := ""
+	if "::" in filter:
+		var parts := filter.split("::")
+		filter = parts[0]
+		only_test = parts[1]
 	for f in dir.get_files():
 		if f.ends_with("_tests.gd") and (filter == "" or f.begins_with(filter)):
 			files.append(f)
 	files.sort()
 	var total := 0
 	var failed := 0
+	var metrics := {}
 	for f in files:
 		var script: GDScript = load("res://tests/" + f)
 		if script == null:
@@ -33,13 +39,18 @@ func _run() -> void:
 		root.add_child(tc)
 		for m in tc.get_method_list():
 			var name: String = m["name"]
-			if not name.begins_with("test_"):
+			if not name.begins_with("test_") or (only_test != "" and not name.contains(only_test)):
 				continue
 			total += 1
 			tc.failures.clear()
+			tc.metrics = {}
 			var t0 := Time.get_ticks_msec()
 			await tc.call(name)
 			var dt := Time.get_ticks_msec() - t0
+			if not tc.metrics.is_empty():
+				metrics[f.get_basename() + "::" + name] = tc.metrics
+				for k in tc.metrics:
+					print("       . %s = %s" % [k, str(tc.metrics[k])])
 			if tc.failures.is_empty():
 				print("[PASS] %s::%s (%d ms)" % [f, name, dt])
 			else:
@@ -48,5 +59,11 @@ func _run() -> void:
 				for msg in tc.failures:
 					print("       - ", msg)
 		tc.queue_free()
+	if not metrics.is_empty():
+		var out := ProjectSettings.globalize_path("res://").path_join("../build/test_metrics_%s.json" % ("all" if filter == "" else filter))
+		DirAccess.make_dir_recursive_absolute(out.get_base_dir())
+		var fa := FileAccess.open(out, FileAccess.WRITE)
+		if fa != null:
+			fa.store_string(JSON.stringify(metrics, "  "))
 	print("TESTS: %d run, %d failed" % [total, failed])
 	quit(1 if failed > 0 or total == 0 else 0)

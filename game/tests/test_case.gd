@@ -3,6 +3,10 @@ extends Node
 
 var tree: SceneTree
 var failures: Array[String] = []
+var metrics := {}
+
+func metric(key: String, value: Variant) -> void:
+	metrics[key] = snappedf(value, 0.0001) if value is float else value
 
 func check(cond: bool, msg: String) -> void:
 	if not cond:

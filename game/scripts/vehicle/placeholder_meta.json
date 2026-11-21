@@ -1,0 +1,15 @@
+{
+  "_comment": "Placeholder car meta (box body + 4 cylinders). Same schema as game/assets/cars/ccgt/ccgt_meta.json. Godot frame: forward -Z, up +Y, right +X, origin on the ground at static ride height, centred, mid-wheelbase.",
+  "wheelbase": 2.72,
+  "track_front": 1.62,
+  "track_rear": 1.62,
+  "wheels": {
+    "FL": {"pos": [-0.81, 0.3225, -1.36], "radius": 0.3225, "width": 0.33},
+    "FR": {"pos": [0.81, 0.3225, -1.36], "radius": 0.3225, "width": 0.33},
+    "RL": {"pos": [-0.81, 0.3225, 1.36], "radius": 0.3225, "width": 0.33},
+    "RR": {"pos": [0.81, 0.3225, 1.36], "radius": 0.3225, "width": 0.33}
+  },
+  "bbox_min": [-1.0, 0.10, -2.15],
+  "bbox_max": [1.0, 1.08, 2.15],
+  "markers": {}
+}
