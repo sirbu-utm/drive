@@ -36,3 +36,7 @@
 - Poly Haven texture `dirt_floor` (CC0) https://polyhaven.com/a/dirt_floor
 - Poly Haven texture `gravel_floor_02` (CC0) https://polyhaven.com/a/gravel_floor_02
 - Poly Haven texture `brown_mud_leaves_01` (CC0) https://polyhaven.com/a/brown_mud_leaves_01
+
+## Godot plugins (MIT)
+- Terrain3D (MIT) https://github.com/TokisanGames/Terrain3D
+- Godot Motion Blur Addon + Easy Compositor (MIT, sphynx-owner) https://github.com/sphynx-owner/Godot-Motion-Blur-Addon

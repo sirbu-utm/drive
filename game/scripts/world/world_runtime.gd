@@ -33,6 +33,7 @@ func _ready() -> void:
 	add_child(sky)
 	sky.set_time(start_hour)
 	_setup_atmosphere()
+	_setup_motion_blur()
 	_load_spawns()
 	_create_tree_colliders()
 	_create_grass()
@@ -166,3 +167,22 @@ func _create_grass() -> void:
 	grass.set("mesh_material_override", gm)
 	grass.set("terrain", terrain)
 	add_child(grass)
+
+
+## Per-pixel motion blur (Guertin-style, sphynx-owner Godot-Motion-Blur-Addon, MIT) as a compositor effect.
+## The chase camera follows the car, so the car stays sharp and the world streaks.
+var motion_blur: CompositorEffect
+
+func _setup_motion_blur() -> void:
+	var scr := load("res://addons/godot-motion-blur/guertin/guertin_motion_blur.gd")
+	if scr == null:
+		return
+	motion_blur = scr.new()
+	motion_blur.set("intensity", 0.55)
+	# framerate_independent (default on) simulates a fixed shutter at any fps; Movie Maker renders slower than
+	# real time, so captured frames show almost no blur — that's expected, real play is blurred.
+	motion_blur.set("samples", 6)
+	motion_blur.set("multiplier_camera_rotation", 0.15)
+	var comp := Compositor.new()
+	comp.compositor_effects = [motion_blur]
+	sky.world_env.compositor = comp
