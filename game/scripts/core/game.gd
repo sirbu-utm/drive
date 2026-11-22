@@ -87,7 +87,9 @@ func _ready() -> void:
 		controller.headlights_toggled.connect(_toggle_headlights)
 		add_child(controller)
 	GameSettings.changed.connect(_on_setting_changed)
+	GraphicsSettings.changed.connect(_apply_car_graphics)
 	_apply_settings()
+	_apply_car_graphics()
 	menus = MenuManager.new()
 	menus.name = "Menus"
 	menus.game = self
@@ -219,6 +221,11 @@ func _apply_settings() -> void:
 	var cv := car.car_visual()
 	if cv != null:
 		cv.call("set_paint", GameSettings.get_value("car", "color"))
+
+
+func _apply_car_graphics() -> void:
+	if car != null:
+		GraphicsSettings.apply_to_car_visual(car.car_visual())
 
 
 func _clear_trial() -> void:

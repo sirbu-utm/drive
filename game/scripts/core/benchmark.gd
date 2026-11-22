@@ -171,6 +171,9 @@ func _apply_ablation(key: String) -> void:
 		"shadow_distance": GraphicsSettings.set_option("shadow_distance", 120.0)
 		"trees": GraphicsSettings.set_option("tree_distance", 0.3)
 		"grass": GraphicsSettings.set_option("grass", false)
+		"motion_blur": GraphicsSettings.set_option("motion_blur", 0.0)
+		"sharpen": GraphicsSettings.set_option("sharpen", 0.0)
+		"car_reflections": GraphicsSettings.set_option("car_reflections", 0)
 		"aniso": GraphicsSettings.set_option("aniso", 0)
 		"fsr":
 			GraphicsSettings.set_option("scale", 0.67)

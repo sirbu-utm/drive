@@ -15,22 +15,24 @@ const ANISO_NAMES := ["Выкл", "2x", "4x", "8x", "16x"]
 const SHADOW_SIZES := [2048, 4096, 8192, 8192]
 const SHADOW_NAMES := ["Низкое", "Среднее", "Высокое", "Ультра"]
 const UPSCALER_NAMES := ["Билинейное", "FSR 2"]
+const CAR_REFLECTION_NAMES := ["Выкл", "Низкие", "Высокие"]
 
 ## msaa, aa, aniso, shadow_size (index), shadow_quality (RenderingServer.ShadowQuality), shadow_distance,
-## ssao, ssil, ssr, sdfgi, glow, vfog, tree_distance (multiplier), grass (World/Grass visible), scale, upscaler
+## ssao, ssil, ssr, sdfgi, glow, vfog, tree_distance (multiplier), grass (World/Grass visible),
+## motion_blur 0..1 (world.set_motion_blur, 0 = off), sharpen 0..1 (world.set_sharpen), car_reflections 0|1|2 (CarVisual.set_reflection_quality), scale, upscaler
 const PRESETS := [
 	# Низкие
 	{"msaa": 0, "aa": 1, "aniso": 1, "shadow_size": 0, "shadow_quality": 1, "shadow_distance": 140.0, "ssao": false, "ssil": false,
-		"ssr": false, "sdfgi": false, "glow": false, "vfog": false, "tree_distance": 0.4, "grass": false, "scale": 0.77, "upscaler": 1},
+		"ssr": false, "sdfgi": false, "glow": false, "vfog": false, "tree_distance": 0.4, "grass": false, "motion_blur": 0.0, "sharpen": 0.5, "car_reflections": 0, "scale": 0.77, "upscaler": 1},
 	# Средние
 	{"msaa": 0, "aa": 2, "aniso": 2, "shadow_size": 1, "shadow_quality": 2, "shadow_distance": 220.0, "ssao": true, "ssil": false,
-		"ssr": false, "sdfgi": false, "glow": true, "vfog": false, "tree_distance": 0.65, "grass": true, "scale": 1.0, "upscaler": 0},
+		"ssr": false, "sdfgi": false, "glow": true, "vfog": false, "tree_distance": 0.65, "grass": true, "motion_blur": 0.3, "sharpen": 0.4, "car_reflections": 1, "scale": 1.0, "upscaler": 0},
 	# Высокие
 	{"msaa": 1, "aa": 2, "aniso": 3, "shadow_size": 2, "shadow_quality": 3, "shadow_distance": 320.0, "ssao": true, "ssil": true,
-		"ssr": true, "sdfgi": false, "glow": true, "vfog": false, "tree_distance": 1.0, "grass": true, "scale": 1.0, "upscaler": 0},
+		"ssr": true, "sdfgi": false, "glow": true, "vfog": false, "tree_distance": 1.0, "grass": true, "motion_blur": 0.3, "sharpen": 0.4, "car_reflections": 2, "scale": 1.0, "upscaler": 0},
 	# Ультра: всё включено
 	{"msaa": 2, "aa": 2, "aniso": 4, "shadow_size": 3, "shadow_quality": 4, "shadow_distance": 500.0, "ssao": true, "ssil": true,
-		"ssr": true, "sdfgi": true, "glow": true, "vfog": true, "tree_distance": 1.4, "grass": true, "scale": 1.0, "upscaler": 0},
+		"ssr": true, "sdfgi": true, "glow": true, "vfog": true, "tree_distance": 1.4, "grass": true, "motion_blur": 0.3, "sharpen": 0.4, "car_reflections": 2, "scale": 1.0, "upscaler": 0},
 ]
 const DISPLAY_DEFAULTS := {"window_mode": 0, "resolution": 2, "vsync": true, "fps_cap": 0}
 
@@ -148,6 +150,12 @@ func apply() -> void:
 	changed.emit()
 
 
+## reflection quality of a CarVisual (Game calls this for the player's car when the settings change)
+func apply_to_car_visual(cv: Node) -> void:
+	if cv != null and cv.has_method("set_reflection_quality"):
+		cv.call("set_reflection_quality", int(values["car_reflections"]))
+
+
 func _apply_world(w: Node) -> void:
 	var sky: Object = w.get("sky")
 	if sky != null:
@@ -175,6 +183,10 @@ func _apply_world(w: Node) -> void:
 		var sun: DirectionalLight3D = sky.get("sun")
 		if sun != null:
 			sun.directional_shadow_max_distance = float(values["shadow_distance"])
+	if w.has_method("set_motion_blur"):
+		w.call("set_motion_blur", float(values["motion_blur"]))
+	if w.has_method("set_sharpen"):
+		w.call("set_sharpen", float(values["sharpen"]))
 	var grass: Variant = w.get("grass")
 	if grass is Node3D:
 		(grass as Node3D).visible = bool(values["grass"])

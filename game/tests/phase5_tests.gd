@@ -236,6 +236,70 @@ func test_graphics_presets_apply_at_runtime() -> void:
 	await _free_game(g)
 
 
+func test_graphics_motion_blur_sharpen_car_reflections() -> void:
+	var g := await _new_game()
+	var w := g.world
+	var cv := g.car.car_visual()
+	check(w.has_method("set_motion_blur") and w.has_method("set_sharpen"), "world exposes set_motion_blur / set_sharpen")
+	check(cv != null and cv.has_method("set_reflection_quality"), "CarVisual exposes set_reflection_quality")
+	# presets: High / Ultra = blur 0.3, sharpen 0.4, reflections high; Medium = low reflections; Low = blur off, no reflections
+	GraphicsSettings.set_preset(3)
+	check_near(float(GraphicsSettings.values["motion_blur"]), 0.3, 0.001, "Ultra: motion blur 0.3")
+	check_near(float(GraphicsSettings.values["sharpen"]), 0.4, 0.001, "Ultra: sharpen 0.4")
+	check_eq(int(cv.get("reflection_quality")), 2, "Ultra: car reflections high")
+	if w.motion_blur != null:
+		check(w.motion_blur.enabled and absf(float(w.motion_blur.get("intensity")) - 0.3) < 0.001, "Ultra: world motion blur on at 0.3")
+	if w.sharpen != null:
+		check(w.sharpen.enabled and absf(w.sharpen.sharpness - 0.4) < 0.001, "Ultra: sharpen effect on at 0.4")
+	GraphicsSettings.set_preset(2)
+	check_eq(int(cv.get("reflection_quality")), 2, "High: car reflections high")
+	GraphicsSettings.set_preset(1)
+	check_eq(int(cv.get("reflection_quality")), 1, "Medium: car reflections low")
+	GraphicsSettings.set_preset(0)
+	check_eq(int(cv.get("reflection_quality")), 0, "Low: car reflections off")
+	if w.motion_blur != null:
+		check(not w.motion_blur.enabled, "Low: motion blur off")
+	# individual options go through to the world / car and switch the preset to custom
+	GraphicsSettings.set_option("motion_blur", 0.8)
+	check_eq(GraphicsSettings.preset, 4, "motion blur slider -> custom preset")
+	if w.motion_blur != null:
+		check(w.motion_blur.enabled and absf(float(w.motion_blur.get("intensity")) - 0.8) < 0.001, "slider 0.8 reaches the world")
+	GraphicsSettings.set_option("motion_blur", 0.0)
+	if w.motion_blur != null:
+		check(not w.motion_blur.enabled, "slider 0 switches motion blur off")
+	GraphicsSettings.set_option("sharpen", 0.9)
+	if w.sharpen != null:
+		check(w.sharpen.enabled and absf(w.sharpen.sharpness - 0.9) < 0.001, "sharpen 0.9 reaches the effect")
+	GraphicsSettings.set_option("sharpen", 0.0)
+	if w.sharpen != null:
+		check(not w.sharpen.enabled, "sharpen 0 switches the effect off")
+	GraphicsSettings.set_option("car_reflections", 1)
+	check_eq(int(cv.get("reflection_quality")), 1, "reflection option reaches CarVisual")
+	# settings tab shows them
+	var sm := g.menus.settings
+	sm.open(0)
+	check(sm._gfx_controls.has("motion_blur") and sm._gfx_controls.has("sharpen") and sm._gfx_controls.has("car_reflections"), "graphics tab has the three new controls")
+	check_eq((sm._gfx_controls["car_reflections"] as OptionButton).selected, 1, "reflection selector shows the current value")
+	check_near((sm._gfx_controls["sharpen"] as HSlider).value, 0.0, 0.001, "sharpen slider shows the current value")
+	sm.visible = false
+	# persistence: values are written under [graphics] and read back by load_values()
+	GraphicsSettings.set_option("motion_blur", 0.55)
+	GraphicsSettings.set_option("sharpen", 0.25)
+	GraphicsSettings.set_option("car_reflections", 2)
+	check_near(float(GameSettings.get_value_or("graphics", "motion_blur", -1.0)), 0.55, 0.001, "motion blur stored")
+	check_near(float(GameSettings.get_value_or("graphics", "sharpen", -1.0)), 0.25, 0.001, "sharpen stored")
+	check_eq(int(GameSettings.get_value_or("graphics", "car_reflections", -1)), 2, "reflections stored")
+	GraphicsSettings.values["motion_blur"] = 0.0
+	GraphicsSettings.load_values()
+	check_near(float(GraphicsSettings.values["motion_blur"]), 0.55, 0.001, "motion blur read back")
+	check_near(float(GraphicsSettings.values["sharpen"]), 0.25, 0.001, "sharpen read back")
+	# without a world that has the methods nothing breaks
+	GraphicsSettings.apply_to_car_visual(null)
+	GraphicsSettings.apply_to_car_visual(Node.new())
+	GraphicsSettings.set_preset(2)
+	await _free_game(g)
+
+
 func test_headlights_auto_and_manual_and_interior_exposure() -> void:
 	var g := await _new_game({"hour": "12.5"})
 	await tree.process_frame

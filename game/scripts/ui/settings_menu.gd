@@ -168,6 +168,9 @@ func _build_graphics() -> void:
 	_gfx_controls["glow"] = _check(g, "Свечение (Glow)", func(on: bool): gs.set_option("glow", on))
 	_gfx_controls["vfog"] = _check(g, "Объёмный туман", func(on: bool): gs.set_option("vfog", on))
 	_gfx_controls["grass"] = _check(g, "Трава (GPU)", func(on: bool): gs.set_option("grass", on))
+	_gfx_controls["motion_blur"] = _slider(g, "Размытие в движении", 0.0, 1.0, 0.05, func(v: float): return "выкл" if v < 0.01 else "%d %%" % int(round(v * 100.0)), func(v: float): gs.set_option("motion_blur", v))
+	_gfx_controls["sharpen"] = _slider(g, "Резкость", 0.0, 1.0, 0.05, func(v: float): return "выкл" if v < 0.01 else "%d %%" % int(round(v * 100.0)), func(v: float): gs.set_option("sharpen", v))
+	_gfx_controls["car_reflections"] = _option(g, "Отражения на машине", gs.CAR_REFLECTION_NAMES, func(i: int): gs.set_option("car_reflections", i))
 	_gfx_controls["tree_distance"] = _slider(g, "Дальность прорисовки деревьев", 0.2, 2.0, 0.05, func(v: float): return "%d %%" % int(v * 100.0), func(v: float): gs.set_option("tree_distance", v))
 
 
@@ -311,6 +314,9 @@ func _refresh_graphics() -> void:
 		c.button_pressed = bool(v[k])
 		c.text = "вкл" if c.button_pressed else "выкл"
 	_set_slider(_gfx_controls["tree_distance"], float(v["tree_distance"]))
+	_set_slider(_gfx_controls["motion_blur"], float(v["motion_blur"]))
+	_set_slider(_gfx_controls["sharpen"], float(v["sharpen"]))
+	(_gfx_controls["car_reflections"] as OptionButton).select(clampi(int(v["car_reflections"]), 0, 2))
 	var d := gs.display
 	(_gfx_controls["window_mode"] as OptionButton).select(int(d["window_mode"]))
 	(_gfx_controls["resolution"] as OptionButton).select(clampi(int(d["resolution"]), 0, gs.RESOLUTIONS.size() - 1))
