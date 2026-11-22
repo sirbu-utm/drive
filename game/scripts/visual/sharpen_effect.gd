@@ -25,11 +25,17 @@ layout(push_constant, std430) uniform Params {
 	float mode;      // 0 = sharpen src -> dst, 1 = plain copy src -> dst
 } p;
 
+// Everything is done in a compressed 0..1 space (x / (1 + x)) and mapped back: sharpening raw HDR made the
+// negative lobe drive pixels next to bright highlights below zero -> black specks. NaN/Inf are scrubbed.
 vec3 ld(ivec2 c) {
 	c = clamp(c, ivec2(0), ivec2(p.size) - 1);
-	return max(imageLoad(src_image, c).rgb, vec3(0.0));
+	vec3 v = imageLoad(src_image, c).rgb;
+	v = mix(v, vec3(0.0), vec3(isnan(v)));
+	v = clamp(v, vec3(0.0), vec3(65000.0));
+	return v / (1.0 + v);
 }
-vec3 cmp(vec3 v) { return v / (1.0 + v); }
+vec3 cmp(vec3 v) { return v; }
+vec3 expand(vec3 y) { y = clamp(y, vec3(0.0), vec3(0.9995)); return y / (1.0 - y); }
 
 void main() {
 	ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
@@ -53,7 +59,7 @@ void main() {
 	float peak = -1.0 / mix(8.0, 5.0, clamp(p.sharpness, 0.0, 1.0));
 	vec3 w = amp * peak;
 	vec3 rcp = 1.0 / (1.0 + 4.0 * w);
-	vec3 outc = max((b * w + d * w + f * w + h * w + e) * rcp, vec3(0.0));
+	vec3 outc = expand((b * w + d * w + f * w + h * w + e) * rcp);
 	imageStore(dst_image, uv, vec4(outc, imageLoad(src_image, uv).a));
 }
 """

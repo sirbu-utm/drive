@@ -54,7 +54,8 @@ void fragment() {
 	float footprint = length(fwidth(p));                 // flake cells per pixel
 	float fade = 1.0 - smoothstep(0.35, 1.2, footprint);  // 1 = flakes resolved, 0 = sub-pixel
 	float is_flake = step(1.0 - flake_density, rnd.z);
-	vec3 fdir_obj = normalize(rnd * 2.0 - 1.0);
+	vec3 fr = rnd * 2.0 - 1.0;
+	vec3 fdir_obj = fr / max(length(fr), 1e-3);          // normalize() of a ~zero vector gave NaN pixels
 	vec3 fdir_view = normalize((VIEW_MATRIX * (MODEL_MATRIX * vec4(fdir_obj, 0.0))).xyz);
 	vec3 geo_n = NORMAL;
 	NORMAL = normalize(geo_n + fdir_view * (flake_normal_strength * fade * is_flake));

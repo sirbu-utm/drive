@@ -100,7 +100,8 @@ void fragment() {
 	float cov = alb.a;
 	vec3 col = cov > 1e-3 ? alb.rgb / max(cov, 1e-3) * cov / max(cov, 1e-3) : vec3(0.0);
 	col = alb.rgb / max(cov, 1e-3);
-	vec3 n_obj = normalize(nrm.rgb / max(cov, 1e-3) * 2.0 - 1.0);
+	vec3 n_raw = nrm.rgb / max(cov, 1e-3) * 2.0 - 1.0;
+	vec3 n_obj = length(n_raw) > 1e-4 ? normalize(n_raw) : vec3(0.0, 1.0, 0.0);   // never NaN
 	ALBEDO = clamp(col, 0.0, 1.0) * tint;
 	NORMAL = normalize((VIEW_MATRIX * (MODEL_MATRIX * vec4(n_obj, 0.0))).xyz);
 	ROUGHNESS = 0.85;
