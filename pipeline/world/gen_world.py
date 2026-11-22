@@ -40,6 +40,12 @@ ROAD_KINDS = {
 }
 
 
+CAMBER = {"country": 0.02, "highway": 0.02, "mountain": 0.025, "runway": 0.01, "taxi": 0.015, "dirt": 0.0}
+# vertical-curve smoothing (gaussian sigma, metres) and design speed (m/s) for the comfort check
+VCURVE = {"country": (34.0, 45.0), "highway": (50.0, 70.0), "mountain": (12.0, 24.0), "runway": (90.0, 85.0),
+          "taxi": (16.0, 20.0), "dirt": (8.0, 18.0)}
+
+
 def log(*a):
     print("[world]", *a, flush=True)
 
@@ -233,8 +239,8 @@ def road_network():
             (1060, -990), (820, -905), (600, -1020), (370, -950), (160, -1050), (-20, -1000), (-260, -1060),
             (-520, -940), (-770, -1010), (-1010, -880), (-1250, -700), (-1360, -440), (-1430, -150),
             (-1375, 140), (-1470, 430), (-1505, 790), (-1510, 1110)]
-    serp = [tuple(p) for p in serpentine((-60, -1120), 180, 5, 240, 68, -90)]
-    mpass = [(-20, -1000), (-50, -1080)] + serp + [(-120, -1460), (120, -1540), (450, -1610), (720, -1540),
+    serp = [tuple(p) for p in serpentine((-60, -1120), 180, 6, 240, 68, -90)]
+    mpass = [(-20, -1000), (-50, -1080)] + serp + [(120, -1520), (450, -1610), (720, -1540),
                                                    (920, -1390), (1020, -1180), (1060, -990)]
     runway = [(-1080, -380), (-1080, 1180)]
     taxi = [(-1375, 140), (-1250, 160), (-1110, 165)]
@@ -290,7 +296,28 @@ def profile(h, xz, kind, closed, pins):
             sm[i] = np.clip(sm[i], sm[i + 1] - dmax, sm[i + 1] + dmax)
         for idx, val in pins:
             sm[idx] = val
+    # vertical curves: gaussian smoothing, then re-impose pins with a smooth (raised-cosine) correction
+    sigma = VCURVE[kind][0] / step
+    for it in range(3):
+        sm = ndimage.gaussian_filter1d(sm, sigma * (1.0 if it < 2 else 0.5), mode=mode)
+        for idx, val in pins:
+            delta = val - sm[idx]
+            span = int(max(60.0, 3 * VCURVE[kind][0]) / step)
+            for j in range(-span, span + 1):
+                q = idx + j
+                if closed:
+                    q %= len(sm)
+                elif q < 0 or q >= len(sm):
+                    continue
+                sm[q] += delta * (0.5 + 0.5 * math.cos(math.pi * abs(j) / span))
     return sm
+
+
+def comfort(hh, kind, closed):
+    """Max vertical acceleration (g) at design speed implied by the profile curvature."""
+    v = VCURVE[kind][1]
+    d2 = np.abs(np.diff(np.r_[hh[-2:-1], hh, hh[1:2]] if closed else hh, 2)) / 4.0   # 1/m (2 m samples)
+    return float((v * v * d2).max() / 9.81), float(d2.max())
 
 
 def build_roads(h, nz):
@@ -301,14 +328,31 @@ def build_roads(h, nz):
             xz = resample(np.array(r["pts"], dtype=float), 2.0)
         else:
             xz = catmull_rom(r["pts"], r["closed"])
+        joins = r.get("join", [None, None])
+        edge_pin = {}
+        for which, target in (("start", joins[0]), ("end", joins[1])):
+            if not (target and target in done):
+                continue
+            t = done[target]
+            tree = cKDTree(t["xz"])
+            half_t = ROAD_KINDS[t["kind"]][0] / 2
+            dist, jj = tree.query(xz)
+            inside = dist < half_t - 0.5
+            if which == "start":
+                k0 = int(np.argmax(~inside)) if inside[0] else 0
+                xz = xz[k0:]
+                jt = int(jj[k0])
+            else:
+                rev = inside[::-1]
+                k1 = len(xz) - (int(np.argmax(~rev)) if rev[0] else 0)
+                xz = xz[:k1]
+                jt = int(jj[k1 - 1])
+            edge_pin[which] = float(t["h"][jt]) - CAMBER[t["kind"]] * half_t - 0.015
         pins = []
-        for end, target in zip((0, len(xz) - 1), r.get("join", [None, None])):
-            if target and target in done:
-                t = done[target]
-                tree = cKDTree(t["xz"])
-                dist, j = tree.query(xz[end])
-                xz[end] = t["xz"][j]
-                pins.append((end, float(t["h"][j])))
+        if "start" in edge_pin:
+            pins.append((0, edge_pin["start"]))
+        if "end" in edge_pin:
+            pins.append((len(xz) - 1, edge_pin["end"]))
         hh = profile(h, xz, r["kind"], r["closed"], pins)
         r["xz"], r["h"] = xz, hh
         done[r["name"]] = r
@@ -317,7 +361,9 @@ def build_roads(h, nz):
         terr = bilinear(h, xz[:, 0], xz[:, 1])
         r["cut"] = float((terr - hh).max())
         r["fill"] = float((hh - terr).max())
-        log(f"      cut max {r['cut']:6.1f} m   fill max {r['fill']:6.1f} m")
+        g_max, d2 = comfort(hh, r["kind"], r["closed"])
+        log(f"      cut max {r['cut']:6.1f} m   fill max {r['fill']:6.1f} m   vertical {g_max:4.2f} g @ "
+            f"{VCURVE[r['kind']][1]:.0f} m/s (max d2h {d2 * 4:.3f} m per 2 m^2)")
         log(f"road {r['name']:14s} {r['kind']:8s} length {L / 1000:6.2f} km  h {hh.min():6.1f}..{hh.max():6.1f}  "
             f"max grade {gr.max() * 100:4.1f}%")
     # mark the long straight of the ring as highway width
@@ -345,7 +391,7 @@ def build_roads(h, nz):
 def carve(h, roads):
     """Flatten terrain under roads and blend embankments. Returns new h and per-pixel road info."""
     n = h.shape[0]
-    pts, hs, ws, rid, paved = [], [], [], [], []
+    pts, hs, ws, rid, paved, cams = [], [], [], [], [], []
     for i, r in enumerate(roads):
         xz = resample(np.column_stack([r["xz"]]), 1.0) if False else r["xz"]
         # densify to 1 m for the KD-tree
@@ -358,7 +404,8 @@ def carve(h, roads):
         ws.append(np.interp(s, d, r["width"]))
         rid.append(np.full(len(s), i))
         paved.append(np.full(len(s), ROAD_KINDS[r["kind"]][3]))
-    pts, hs, ws, rid, paved = map(np.concatenate, (pts, hs, ws, rid, paved))
+        cams.append(np.full(len(s), CAMBER[r["kind"]]))
+    pts, hs, ws, rid, paved, cams = map(np.concatenate, (pts, hs, ws, rid, paved, cams))
     tree = cKDTree(pts)
     reach = 90.0
     # query only pixels within the bounding boxes of the roads (all of them, chunked)
@@ -367,6 +414,7 @@ def carve(h, roads):
     road_w = np.zeros(h.shape, dtype=np.float32)
     road_paved = np.zeros(h.shape, dtype=bool)
     road_id = np.full(h.shape, -1, dtype=np.int16)
+    road_cam = np.zeros(h.shape, dtype=np.float32)
     xs = np.arange(n) - n / 2
     for r0 in range(0, n, 256):
         Zr = (np.arange(r0, min(r0 + 256, n)) - n / 2)
@@ -381,12 +429,15 @@ def carve(h, roads):
         road_w[sl] = ws[jj].reshape(XX.shape)
         road_paved[sl] = (paved[jj] & ok).reshape(XX.shape)
         road_id[sl] = np.where(ok, rid[jj], -1).reshape(XX.shape)
+        road_cam[sl] = np.where(ok, cams[jj], 0.0).reshape(XX.shape)
     half = road_w / 2
     d = road_d
     h0 = h.copy()
-    core = d <= half + 1.0
-    target_core = np.where(road_paved, road_h - 0.10, road_h)
-    shoulder_h = road_h - 0.04
+    core = d <= half + 0.6
+    # under the asphalt: follow the road's cross-fall, 12 cm below the surface (no poke-through at the edges)
+    target_core = np.where(road_paved, road_h - road_cam * np.minimum(d, half) - 0.12, road_h)
+    # shoulder: just below the asphalt edge so leaving the road is a small step down, never a lip up
+    shoulder_h = np.where(road_paved, road_h - road_cam * half - 0.03, road_h - 0.04)
     bank_w = np.clip(np.abs(h0 - road_h) * 1.8, 8.0, 140.0)
     t = smoothstep(0.0, 1.0, (d - (half + 3.0)) / bank_w)
     hb = shoulder_h * (1 - t) + h0 * t

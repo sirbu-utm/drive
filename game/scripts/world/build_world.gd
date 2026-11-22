@@ -209,6 +209,26 @@ func _build_roads(meta: Dictionary, world: Node3D) -> Node3D:
 	rail_mat.albedo_color = Color(0.62, 0.64, 0.66)
 	rail_mat.metallic = 0.85
 	rail_mat.roughness = 0.38
+	# ends of branch roads that join another paved road: their cross-fall fades to zero there so the branch
+	# meets the parent's edge without a step
+	for r in meta.roads:
+		r["taper_start"] = false
+		r["taper_end"] = false
+		if not r.paved or r.closed:
+			continue
+		for which in ["start", "end"]:
+			var pe: Array = r.points[0] if which == "start" else r.points[r.points.size() - 1]
+			var pv := Vector3(pe[0], pe[1], pe[2])
+			for o in meta.roads:
+				if o == r or not o.paved:
+					continue
+				for k in range(0, o.points.size(), 1):
+					var q: Array = o.points[k]
+					if Vector2(q[0] - pv.x, q[2] - pv.z).length() < float(o.width[k]) * 0.5 + 1.5:
+						r["taper_" + which] = true
+						break
+				if r["taper_" + which]:
+					break
 	for r in meta.roads:
 		if not r.paved:
 			continue
@@ -253,7 +273,17 @@ func _build_road(r: Dictionary, parent: Node3D, mat: ShaderMaterial) -> void:
 	var n: int = f.n
 	var total: float = f.len
 	var widths: Array = r.width
-	var camber: float = CAMBER[r.kind]
+	var camber0: float = CAMBER[r.kind]
+	var cam_mul := PackedFloat32Array()
+	cam_mul.resize(n)
+	for i in n:
+		var m := 1.0
+		if r.get("taper_start", false):
+			m = minf(m, smoothstep(0.0, 25.0, S[i]))
+		if r.get("taper_end", false):
+			m = minf(m, smoothstep(0.0, 25.0, total - S[i]))
+		cam_mul[i] = m
+	var camber := camber0
 	# lateral profile: skirt, edge .. centre .. edge, skirt   (fractions of half width; skirt handled separately)
 	var fr := [-1.0, -0.66, -0.33, 0.0, 0.33, 0.66, 1.0]
 	var chunk := 75
@@ -268,6 +298,7 @@ func _build_road(r: Dictionary, parent: Node3D, mat: ShaderMaterial) -> void:
 		var verts := []
 		for i in range(start, end + 1):
 			var half: float = widths[i] * 0.5
+			camber = camber0 * cam_mul[i]
 			var row := []
 			# left skirt
 			var offs := [-(half + 0.45)]
@@ -302,6 +333,24 @@ func _build_road(r: Dictionary, parent: Node3D, mat: ShaderMaterial) -> void:
 				if j > 0 and j < cols - 2:     # collision: road top only (no skirts)
 					faces.append_array([verts[i][j], verts[i][j + 1], verts[i + 1][j],
 							verts[i][j + 1], verts[i + 1][j + 1], verts[i + 1][j]])
+		# collision overlaps the next chunk by one row: separate trimesh bodies sharing only an edge let a
+		# shape cast slip through the seam
+		var nxt := end + 1
+		if r.closed and nxt >= n - 1:
+			nxt = 1 + (nxt - (n - 1))
+		if nxt < n:
+			var half_n: float = widths[nxt] * 0.5
+			camber = camber0 * cam_mul[nxt]
+			var extra := []
+			for k in fr:
+				var off2: float = k * half_n
+				var v2 := P[nxt] + R[nxt] * off2
+				v2.y = P[nxt].y - camber * absf(off2)
+				extra.append(v2)
+			var last: Array = verts[rows - 1]
+			for j in range(1, cols - 2):
+				var e := j - 1
+				faces.append_array([last[j], last[j + 1], extra[e], last[j + 1], extra[e + 1], extra[e]])
 		st.generate_normals()
 		st.generate_tangents()
 		var mesh := st.commit()
