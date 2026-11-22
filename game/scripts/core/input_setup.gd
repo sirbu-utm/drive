@@ -46,3 +46,4 @@ static func ensure() -> void:
 	_add("toggle_esc", [_key(KEY_F4)])
 	_add("toggle_gearbox", [_key(KEY_F5), _btn(JOY_BUTTON_X)])
 	_add("toggle_countersteer", [_key(KEY_F6)])
+	_add("toggle_headlights", [_key(KEY_L), _btn(JOY_BUTTON_DPAD_UP)])

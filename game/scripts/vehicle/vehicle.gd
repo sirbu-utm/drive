@@ -216,6 +216,11 @@ func _setup_wheels() -> void:
 	params.wheel_radius = wheels[0].radius
 
 
+## the CarVisual node when the car scene provides one (paint, lamps), else null
+func car_visual() -> Node:
+	return _car_visual
+
+
 func _build_visual() -> void:
 	_visual_root = Node3D.new()
 	_visual_root.name = "Visual"

@@ -2,17 +2,19 @@ class_name PlayerController
 extends Node
 ## Reads keyboard / gamepad input and drives a Vehicle through the InputFilter.
 ## W/S/A/D or arrows, Space = handbrake, E/Q or Shift/Ctrl = gear up/down (manual box), R = reset,
-## F1 telemetry, F2 ABS, F3 TCS, F4 ESC, F5 auto/manual gearbox, F6 counter-steer helper.
+## L headlights, F1 telemetry, F2 ABS, F3 TCS, F4 ESC, F5 auto/manual gearbox, F6 counter-steer helper.
 
 signal reset_requested
 signal telemetry_toggled
 signal assist_changed(name: String, on: bool)
+signal headlights_toggled
 
 @export var vehicle: Vehicle
 var filter: InputFilter
 var manual_gearbox := false
 var use_keyboard := true
 var enabled := true
+var steer_sensitivity := 1.0      # scales the steering angle (settings)
 
 
 func _ready() -> void:
@@ -43,7 +45,7 @@ func _physics_process(dt: float) -> void:
 	filter.update(dt, thr, brk, steer, use_keyboard, vehicle.fwd_speed)
 	var extra := 0.0
 	vehicle.set_reverse(filter.reverse)
-	var angle := filter.steer_angle(vehicle.fwd_speed, extra)
+	var angle := clampf(filter.steer_angle(vehicle.fwd_speed, extra) * steer_sensitivity, -deg_to_rad(vehicle.params.max_steer_angle_deg), deg_to_rad(vehicle.params.max_steer_angle_deg))
 	vehicle.drive(filter.throttle, filter.brake, angle, Input.get_action_strength("handbrake"))
 	if manual_gearbox:
 		if Input.is_action_just_pressed("shift_up"):
@@ -66,6 +68,8 @@ func _physics_process(dt: float) -> void:
 	if Input.is_action_just_pressed("toggle_countersteer"):
 		vehicle.assists.countersteer_on = not vehicle.assists.countersteer_on
 		assist_changed.emit("Countersteer", vehicle.assists.countersteer_on)
+	if Input.is_action_just_pressed("toggle_headlights"):
+		headlights_toggled.emit()
 	if Input.is_action_just_pressed("toggle_gearbox"):
 		manual_gearbox = not manual_gearbox
 		vehicle.set_auto_gearbox(not manual_gearbox)

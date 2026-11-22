@@ -42,6 +42,8 @@ var _fov := 62.0
 var _head := Vector3.ZERO
 var _shake_vel := 0.0
 var _dist_extra := 0.0               # boom stretch with speed / acceleration (spring feel)
+var _attr_chase: CameraAttributesPractical
+var _attr_mounted: CameraAttributesPractical
 
 
 func _ready() -> void:
@@ -51,11 +53,18 @@ func _ready() -> void:
 	camera.far = 12000.0
 	camera.near = 0.08
 	camera.fov = 62.0
-	var attr := CameraAttributesPractical.new()
-	attr.auto_exposure_enabled = true
-	attr.auto_exposure_scale = 0.45
-	attr.auto_exposure_speed = 20.0
-	camera.attributes = attr
+	_attr_chase = CameraAttributesPractical.new()
+	_attr_chase.auto_exposure_enabled = true
+	_attr_chase.auto_exposure_scale = 0.45
+	_attr_chase.auto_exposure_speed = 20.0
+	# mounted cameras look out of a dark cabin: a tight exposure range keeps the cabin dark and the exterior through the glass correct
+	_attr_mounted = CameraAttributesPractical.new()
+	_attr_mounted.auto_exposure_enabled = true
+	_attr_mounted.auto_exposure_min_sensitivity = 100.0
+	_attr_mounted.auto_exposure_max_sensitivity = 400.0
+	_attr_mounted.auto_exposure_scale = 0.35
+	_attr_mounted.auto_exposure_speed = 20.0
+	camera.attributes = _attr_chase
 	add_child(camera)
 	camera.current = true
 	_noise.seed = 7
@@ -64,9 +73,21 @@ func _ready() -> void:
 	set_process_unhandled_input(true)
 
 
+## true when the camera sits inside the cabin (hood / cockpit): used for the interior audio mix
+func is_interior() -> bool:
+	return mode == Mode.HOOD or mode == Mode.COCKPIT
+
+
+## hood / bumper / cockpit: rigidly mounted on the car
+func is_mounted() -> bool:
+	return mode == Mode.HOOD or mode == Mode.BUMPER or mode == Mode.COCKPIT
+
+
 func set_mode(m: int) -> void:
 	mode = posmod(m, MODE_NAMES.size())
 	_have_pos = false
+	if camera != null:
+		camera.attributes = _attr_mounted if is_mounted() else _attr_chase
 	mode_changed.emit(MODE_NAMES[mode])
 
 

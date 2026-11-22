@@ -1,0 +1,116 @@
+{
+ "loops": [
+  {
+   "file": "engine_on_1000.wav",
+   "rpm": 1000.0,
+   "nominal_rpm": 1000,
+   "load": "on",
+   "samples": 105840
+  },
+  {
+   "file": "engine_off_1000.wav",
+   "rpm": 1000.0,
+   "nominal_rpm": 1000,
+   "load": "off",
+   "samples": 105840
+  },
+  {
+   "file": "engine_on_1900.wav",
+   "rpm": 1900.0,
+   "nominal_rpm": 1900,
+   "load": "on",
+   "samples": 105840
+  },
+  {
+   "file": "engine_off_1900.wav",
+   "rpm": 1900.0,
+   "nominal_rpm": 1900,
+   "load": "off",
+   "samples": 105840
+  },
+  {
+   "file": "engine_on_3000.wav",
+   "rpm": 3000.0,
+   "nominal_rpm": 3000,
+   "load": "on",
+   "samples": 88200
+  },
+  {
+   "file": "engine_off_3000.wav",
+   "rpm": 3000.0,
+   "nominal_rpm": 3000,
+   "load": "off",
+   "samples": 88200
+  },
+  {
+   "file": "engine_on_4200.wav",
+   "rpm": 4200.0,
+   "nominal_rpm": 4200,
+   "load": "on",
+   "samples": 88200
+  },
+  {
+   "file": "engine_off_4200.wav",
+   "rpm": 4200.0,
+   "nominal_rpm": 4200,
+   "load": "off",
+   "samples": 88200
+  },
+  {
+   "file": "engine_on_5400.wav",
+   "rpm": 5400.0,
+   "nominal_rpm": 5400,
+   "load": "on",
+   "samples": 88200
+  },
+  {
+   "file": "engine_off_5400.wav",
+   "rpm": 5400.0,
+   "nominal_rpm": 5400,
+   "load": "off",
+   "samples": 88200
+  },
+  {
+   "file": "engine_on_6600.wav",
+   "rpm": 6600.0,
+   "nominal_rpm": 6600,
+   "load": "on",
+   "samples": 88200
+  },
+  {
+   "file": "engine_off_6600.wav",
+   "rpm": 6600.0,
+   "nominal_rpm": 6600,
+   "load": "off",
+   "samples": 88200
+  },
+  {
+   "file": "engine_on_7800.wav",
+   "rpm": 7800.0,
+   "nominal_rpm": 7800,
+   "load": "on",
+   "samples": 88200
+  },
+  {
+   "file": "engine_off_7800.wav",
+   "rpm": 7800.0,
+   "nominal_rpm": 7800,
+   "load": "off",
+   "samples": 88200
+  },
+  {
+   "file": "engine_on_9000.wav",
+   "rpm": 9000.0,
+   "nominal_rpm": 9000,
+   "load": "on",
+   "samples": 88200
+  },
+  {
+   "file": "engine_off_9000.wav",
+   "rpm": 9000.0,
+   "nominal_rpm": 9000,
+   "load": "off",
+   "samples": 88200
+  }
+ ]
+}
