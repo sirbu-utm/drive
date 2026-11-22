@@ -154,6 +154,13 @@ func cast(space: PhysicsDirectSpaceState3D, xf: Transform3D, travel_bump: float,
 		var obj := instance_from_id(info["collider_id"]) if info.has("collider_id") else null
 		var hit: Vector3 = info.get("point", Vector3.INF)
 		surface = SurfaceDB.get_surface(obj, hit) if obj != null else SurfaceDB.SURFACES["asphalt"]
+		# terrain (position dependent surface) that pokes a few cm through a road: the road wins
+		if obj != null and hit != Vector3.INF and SurfaceDB.is_provider(obj):
+			var rq := PhysicsRayQueryParameters3D.create(hit + normal * 0.2, hit - normal * 0.07)
+			rq.exclude = [info["rid"]]
+			var rr := space.intersect_ray(rq)
+			if not rr.is_empty():
+				surface = SurfaceDB.get_surface(rr["collider"] as Object, rr["position"])
 
 
 func compute_suspension(dt: float, p: VehicleParams) -> void:

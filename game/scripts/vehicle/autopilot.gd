@@ -20,7 +20,7 @@ var stop_at_end := true
 var lap_done := false
 var finished := false
 var lookahead_min := 6.0
-var lookahead_gain := 0.40
+var lookahead_gain := 0.50
 var spacing := 2.0
 
 var cte := 0.0                         # cross-track error (m, + = car is left of the path)
@@ -75,6 +75,15 @@ func _build_speed_profile() -> void:
 		for d in range(-3, 4):
 			s = maxf(s, kap[posmod(k + d, m)] if closed else kap[clampi(k + d, 0, m - 1)])
 		var v := sqrt(lat_g * 9.81 / maxf(s, 1e-4))
+		# crest / kink limit: the car must not unload on a convex vertical profile (grade change over ~8 m)
+		var y0 := _at(k - 4).y
+		var y1 := _at(k).y
+		var y2 := _at(k + 4).y
+		var g_in := (y1 - y0) / (4.0 * spacing)
+		var g_out := (y2 - y1) / (4.0 * spacing)
+		var kv := maxf(g_in - g_out, 0.0) / (4.0 * spacing)
+		if kv > 1e-4:
+			v = minf(v, sqrt(0.55 * 9.81 / kv))
 		vlim[k] = minf(v, vmax)
 	if not closed and stop_at_end:
 		vlim[m - 1] = 0.0
@@ -126,7 +135,8 @@ func update(car: Vehicle) -> Vector3:
 	var local := car.global_transform.affine_inverse() * target
 	var dist := maxf(Vector2(local.x, local.z).length(), 0.5)
 	var alpha := atan2(-local.x, -local.z)
-	var steer := clampf(atan2(2.0 * car.params.wheelbase * sin(alpha), dist), -0.6, 0.6)
+	var steer_lim := 0.6 / (1.0 + pow(v / 14.0, 2.0))
+	var steer := clampf(atan2(2.0 * car.params.wheelbase * sin(alpha), dist), -steer_lim, steer_lim)
 	# speed profile with braking look-ahead
 	var vt := vmax
 	var kmax := int(350.0 / spacing)
@@ -142,4 +152,13 @@ func update(car: Vehicle) -> Vector3:
 	var brk := clampf(-0.25 * (e + 0.8), 0.0, 1.0)
 	if e > -0.8:
 		brk = 0.0
+	# traction circle: do not ask for power while the tyres are busy cornering; back off completely in a slide
+	var gl := absf(car.g_lat)
+	thr *= clampf((0.95 - gl) / 0.40, 0.0, 1.0)
+	var beta := absf(atan2(car.lat_speed, maxf(absf(car.fwd_speed), 3.0)))
+	if beta > deg_to_rad(9.0) and car.speed > 8.0:
+		thr = 0.0
+		brk = 0.0
+		# steer into the slide (counter-steer) on top of the pursuit command
+		steer = clampf(steer - signf(car.lat_speed) * (beta - deg_to_rad(6.0)) * 1.2 * signf(car.fwd_speed), -0.5, 0.5)
 	return Vector3(thr, brk, steer)

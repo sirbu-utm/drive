@@ -36,6 +36,7 @@ func _ready() -> void:
 	car.name = "Player"
 	car.car_scene = load(CAR_VISUAL)
 	car.meta_path = CAR_META
+	car.hull_path = "res://assets/cars/ccgt/ccgt_hull.res"
 	# camera first: Terrain3D looks for an active camera when it enters the tree
 	rig = CameraRig.new()
 	rig.name = "CameraRig"
@@ -101,7 +102,63 @@ func respawn() -> void:
 		hud.show_toast("Возврат на дорогу")
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and (event as InputEventKey).physical_keycode == KEY_ESCAPE:
+		get_tree().quit()
+
+
 func _physics_process(_dt: float) -> void:
 	if autopilot != null:
 		var c := autopilot.update(car)
 		car.drive(c.x, c.y, c.z)
+
+
+# ---- smoothness measurement (dev): --jitter=<frames> [--nointerp]  prints per-frame displacement statistics
+var _jit_n := 0
+var _jit_car: Array[float] = []
+var _jit_cam: Array[float] = []
+var _jit_wheel: Array[float] = []
+var _jit_prev_car := Vector3.ZERO
+var _jit_prev_cam := Vector3.ZERO
+var _jit_prev_wheel := Vector3.ZERO
+
+func _process(_dt: float) -> void:
+	if not args.has("jitter") or car == null:
+		return
+	if args.has("nointerp"):
+		car.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
+	var cp := car.get_global_transform_interpolated().origin
+	var cc := rig.camera.global_position
+	var wn := car.get_node_or_null("Visual/Knuckle_FL") as Node3D
+	var wp := wn.get_global_transform_interpolated().origin if wn != null else Vector3.ZERO
+	if _jit_n > 600:
+		_jit_car.append(cp.distance_to(_jit_prev_car))
+		_jit_cam.append(cc.distance_to(_jit_prev_cam))
+		_jit_wheel.append(wp.distance_to(_jit_prev_wheel))
+	_jit_prev_car = cp
+	_jit_prev_cam = cc
+	_jit_prev_wheel = wp
+	_jit_n += 1
+	if _jit_n >= int(args["jitter"]):
+		for pair in [["car", _jit_car], ["camera", _jit_cam], ["front-left hub", _jit_wheel]]:
+			var a: Array = pair[1]
+			var mean := 0.0
+			for x in a:
+				mean += x
+			mean /= maxf(a.size(), 1)
+			var v := 0.0
+			var mx := 0.0
+			for x in a:
+				v += (x - mean) * (x - mean)
+				mx = maxf(mx, x)
+			var sd := sqrt(v / maxf(a.size(), 1))
+			# jitter = deviation of a step from the average of its neighbours (removes the smooth acceleration trend)
+			var j := 0.0
+			var jm := 0.0
+			for i in range(1, a.size() - 1):
+				var dev := absf(a[i] - 0.5 * (a[i - 1] + a[i + 1]))
+				j += dev
+				jm = maxf(jm, dev)
+			j /= maxf(a.size() - 2, 1)
+			print("JITTER %s: mean step %.4f m, step-to-step jitter mean %.5f m (%.2f %% of step), max %.4f m, interp=%s" % [pair[0], mean, j, 100.0 * j / maxf(mean, 1e-6), jm, str(not args.has("nointerp"))])
+		get_tree().quit()

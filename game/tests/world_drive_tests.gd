@@ -85,7 +85,7 @@ func _drive_route(road_name: String, dir: int, start: int, end: int, speed_cap: 
 			stats["fell"] += 1
 		var flipped := car.global_basis.y.y < 0.25
 		off_t = off_t + dt if absf(ap.cte) > 7.0 else 0.0
-		stuck_t = stuck_t + dt if (car.speed < 0.8 and ap.v_target > 4.0) else 0.0
+		stuck_t = stuck_t + dt if (car.speed < 1.5 and ap.v_target > 1.5) else 0.0
 		if flipped or off_t > 1.5 or stuck_t > 3.0 or car.global_position.y < road_y - 6.0:
 			var cb2 := ""
 			for b in car.get_colliding_bodies():
@@ -208,7 +208,9 @@ func test_world_road_surface_scan() -> void:
 		var steps: Array = []
 		var prev_road_h := {}
 		var prev2_road_h := {}
-		for k in range(0, n, 2):
+		var gap_runs: Array = []
+		var cur_gap: Dictionary = {}
+		for k in range(0, n, 1):
 			if k % 20 == 0:
 				focus.global_position = net.lane_point(road, k, 1, 0.0)
 				await tree.physics_frame
@@ -234,6 +236,14 @@ func test_world_road_surface_scan() -> void:
 					ex.append(hit["rid"])
 				samples += 1
 				if is_nan(road_h):
+					# no road collision under this lane column (terrain only): a gap between road chunks
+					if lane == 0.25:
+						if cur_gap.is_empty() or k - cur_gap["end"] > 1:
+							if not cur_gap.is_empty():
+								gap_runs.append(cur_gap)
+							cur_gap = {"start": k, "end": k, "pos": p.snapped(Vector3(0.1, 0.1, 0.1)), "terrain_y": terr_h}
+						else:
+							cur_gap["end"] = k
 					continue
 				var excess := (terr_h - road_h) if not is_nan(terr_h) else -1.0
 				if excess > 0.005:
@@ -256,6 +266,13 @@ func test_world_road_surface_scan() -> void:
 				prev_road_h[key] = road_h
 		if not cur_run.is_empty():
 			runs.append(cur_run)
+		if not cur_gap.is_empty():
+			gap_runs.append(cur_gap)
+		metric(rn + "_collision_gaps_right_lane", gap_runs.size())
+		for j in range(mini(gap_runs.size(), 8)):
+			var gr: Dictionary = gap_runs[j]
+			gr["length_m"] = (gr["end"] - gr["start"] + 1) * 2.0
+			metric(rn + "_gap_%d" % j, gr)
 		metric(rn + "_columns", samples)
 		metric(rn + "_terrain_above_road_pct", 100.0 * over / maxf(samples, 1.0))
 		metric(rn + "_terrain_above_road_max_m", worst)

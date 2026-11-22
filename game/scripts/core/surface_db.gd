@@ -35,3 +35,15 @@ static func get_surface(collider: Object, hit_pos: Vector3 = Vector3.INF) -> Dic
 		n = n.get_parent()
 		depth += 1
 	return SURFACES["asphalt"]
+
+
+## true when the collider's surface depends on the position (terrain with a surface_provider)
+static func is_provider(collider: Object) -> bool:
+	var n := collider as Node
+	var depth := 0
+	while n != null and depth < 4:
+		if n.has_meta("surface_provider"):
+			return true
+		n = n.get_parent()
+		depth += 1
+	return false

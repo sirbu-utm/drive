@@ -100,6 +100,7 @@ func _spawn_car() -> void:
 	if use_real_car:
 		car.car_scene = load("res://assets/cars/ccgt/ccgt_visual.tscn")
 		car.meta_path = "res://assets/cars/ccgt/ccgt_meta.json"
+		car.hull_path = "res://assets/cars/ccgt/ccgt_hull.res"
 	add_child(car)
 	_reset_car()
 

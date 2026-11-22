@@ -15,7 +15,7 @@ const MODE_NAMES := ["Погоня (ближняя)", "Погоня (дальн�
 const MOUNTS := {
 	Mode.HOOD: {"pos": Vector3(0.0, 0.93, -0.95), "pitch": -0.03, "fov": 70.0},
 	Mode.BUMPER: {"pos": Vector3(0.0, 0.42, -2.18), "pitch": 0.0, "fov": 78.0},
-	Mode.COCKPIT: {"pos": Vector3(-0.30, 0.94, -0.02), "pitch": 0.0, "fov": 78.0},
+	Mode.COCKPIT: {"pos": Vector3(-0.30, 0.90, -0.12), "pitch": 0.0, "fov": 72.0},
 }
 ## chase parameters: distance behind, height, look-at height, base fov, extra fov at top speed
 const CHASE := {
@@ -41,6 +41,7 @@ var _clip := 1.0                     # fraction of the chase boom that is free (
 var _fov := 62.0
 var _head := Vector3.ZERO
 var _shake_vel := 0.0
+var _dist_extra := 0.0               # boom stretch with speed / acceleration (spring feel)
 
 
 func _ready() -> void:
@@ -109,7 +110,7 @@ func _look_dir() -> Vector3:
 
 func _chase_target_position(car_origin: Vector3) -> Vector3:
 	var p: Dictionary = CHASE[Mode.CHASE_NEAR if mode == Mode.CHASE_NEAR else Mode.CHASE_FAR]
-	var back: Vector3 = -_look_dir() * float(p["dist"])
+	var back: Vector3 = -_look_dir() * (float(p["dist"]) + _dist_extra)
 	var pitch_up := sin(orbit_pitch) * float(p["dist"])
 	return car_origin + back + Vector3(0.0, float(p["height"]) + pitch_up, 0.0)
 
@@ -162,21 +163,18 @@ func _update_chase(xf: Transform3D, dt: float, speed: float, sp01: float) -> voi
 	# collision-limited boom
 	var from := xf.origin + Vector3(0, 1.2, 0)
 	target = from.lerp(target, _clip)
+	# horizontal: rigid on the (smoothed-heading) boom, so the camera never lags behind the car; the "spring" is the
+	# heading smoothing, the boom stretching with speed / acceleration, and the vertical follow below
 	if not _have_pos:
 		_pos = target
 		_have_pos = true
 	else:
-		# spring follow: horizontal stiffer than vertical
-		var kh := 1.0 - exp(-dt * 9.0)
 		var kv := 1.0 - exp(-dt * 5.5)
-		_pos.x = lerpf(_pos.x, target.x, kh)
-		_pos.z = lerpf(_pos.z, target.z, kh)
+		_pos.x = target.x
+		_pos.z = target.z
 		_pos.y = lerpf(_pos.y, target.y, kv)
-		# keep the boom length bounded even if the car accelerates hard
-		var off := _pos - xf.origin
-		var maxd: float = p["dist"] * 1.35
-		if off.length() > maxd:
-			_pos = xf.origin + off.normalized() * maxd
+	var stretch := float(p["dist"]) * 0.22 * smoothstep(0.0, 70.0, speed) - clampf(vehicle.g_long, -1.2, 1.0) * 0.9
+	_dist_extra = lerpf(_dist_extra, stretch, 1.0 - exp(-dt * 2.5))
 	var look_at_p := xf.origin + Vector3(0, p["look_h"], 0)
 	var cam_xf := Transform3D(Basis(), _pos).looking_at(look_at_p, Vector3.UP)
 	# shake: speed + road roughness

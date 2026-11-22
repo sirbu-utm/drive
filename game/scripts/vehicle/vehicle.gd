@@ -15,6 +15,9 @@ signal shifted(gear: int)
 @export var car_scene: PackedScene
 @export_file("*.json") var meta_path := "res://scripts/vehicle/placeholder_meta.json"
 @export var build_visual := true
+## optional simplified convex hull of the body (ConvexPolygonShape3D, car frame). Used when the file exists,
+## otherwise two boxes from the meta bounding box are used.
+@export var hull_path := ""
 
 const WHEEL_NAMES := ["FL", "FR", "RL", "RR"]
 const WORLD_MASK := 1
@@ -136,7 +139,15 @@ func _setup_body() -> void:
 	pm.friction = 0.25
 	pm.bounce = 0.0
 	physics_material_override = pm
-	# collision hull from the bounding box: low hull + narrower cabin
+	# collision: a supplied convex hull, else a low box + narrower cabin box from the bounding box
+	if hull_path != "" and ResourceLoader.exists(hull_path):
+		var hull := load(hull_path) as Shape3D
+		if hull != null:
+			var hc := CollisionShape3D.new()
+			hc.shape = hull
+			hc.name = "CollisionHull"
+			add_child(hc)
+			return
 	var bb := _bbox()
 	var bmin: Vector3 = bb[0]
 	var bmax: Vector3 = bb[1]
