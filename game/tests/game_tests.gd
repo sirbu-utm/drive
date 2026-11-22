@@ -107,3 +107,29 @@ func test_hud_builds_and_reads_vehicle() -> void:
 	await tree.process_frame
 	hud.queue_free()
 	cleanup()
+
+func test_vehicle_with_real_hull_and_meta() -> void:
+	make_world()
+	car = Vehicle.new()
+	car.build_visual = false
+	car.meta_path = "res://assets/cars/ccgt/ccgt_meta.json"
+	car.hull_path = "res://assets/cars/ccgt/ccgt_hull.res"
+	car.contact_monitor = true
+	car.max_contacts_reported = 8
+	world.add_child(car)
+	car.reset_to(Transform3D(Basis(), Vector3(0, 0.05, 0)))
+	await settle(2.5)
+	var hull := car.get_node_or_null("CollisionHull")
+	check(hull != null, "the supplied convex hull is used (no boxes)")
+	check(car.get_node_or_null("CollisionLow") == null, "box colliders are not built when a hull exists")
+	for w in car.wheels:
+		check(absf(w.comp) < 0.004, "wheel %d static compression ~0 with the real meta (%f)" % [w.index, w.comp])
+	check(car.get_colliding_bodies().is_empty(), "the hull does not touch the ground at ride height")
+	var total := 0.0
+	for w in car.wheels:
+		total += w.fz
+	check_near(total, car.params.mass * 9.81, 80.0, "weight carried by the wheels")
+	check_near(car.params.wheelbase, 2.6867, 0.01, "wheelbase from the car meta")
+	metric("hull_shape", hull.shape.get_class() if hull != null else "none")
+	metric("wheelbase_from_meta", car.params.wheelbase)
+	cleanup()
