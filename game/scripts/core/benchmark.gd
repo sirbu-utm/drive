@@ -8,7 +8,7 @@ extends Node
 
 var game: Game
 var duration := 120.0
-var warmup := 6.0
+var warmup := 12.0
 var out_path := ""
 var label := ""
 var ablate: Array = []                   # list of feature keys switched off one by one after the main run ("sdfgi", "ssr", ...)
@@ -25,6 +25,7 @@ var _phase := "main"
 var _abl_i := -1
 var _abl_dur := 12.0
 var _size_info := ""
+var _ready_to_measure := false
 
 
 func start(g: Game) -> void:
@@ -68,23 +69,26 @@ func start(g: Game) -> void:
 	g.hud.visible = true
 	_last = Time.get_ticks_usec()
 	_t0 = _last
+	_last = Time.get_ticks_usec()
+	_elapsed = 0.0
+	_ready_to_measure = true
 	print("BENCH start preset=%s %s duration=%.0fs" % [p, _size_info, duration])
 
 
 func _process(_dt: float) -> void:
-	if game == null:
+	if game == null or not _ready_to_measure:
 		return
 	var now := Time.get_ticks_usec()
 	var dt := float(now - _last) / 1000.0
 	_last = now
 	_elapsed += dt / 1000.0
-	if _elapsed < warmup:
+	if _elapsed < (warmup if _phase == "main" else 4.0):
 		return
 	_ft.append(dt)
 	_gpu.append(RenderingServer.viewport_get_measured_render_time_gpu(_vp))
 	_cpu.append(RenderingServer.viewport_get_measured_render_time_cpu(_vp))
 	_draw.append(float(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)))
-	var run_t := _elapsed - warmup
+	var run_t := _elapsed - (warmup if _phase == "main" else 4.0)
 	var limit := duration if _phase == "main" else _abl_dur
 	if run_t >= limit:
 		_finish_phase()
