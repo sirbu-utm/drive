@@ -35,6 +35,7 @@ func _ready() -> void:
 	_setup_atmosphere()
 	_load_spawns()
 	_create_tree_colliders()
+	_create_grass()
 
 
 func _setup_atmosphere() -> void:
@@ -138,3 +139,30 @@ func _exit_tree() -> void:
 		PhysicsServer3D.free_rid(b)
 	for s in _tree_shapes:
 		PhysicsServer3D.free_rid(s)
+
+
+## Dense grass blades around the camera (Terrain3D GPU particle example, filtered to grass/meadow texture ids).
+var grass: Node3D
+
+func _create_grass() -> void:
+	if terrain == null:
+		return
+	var scn := load("res://addons/terrain_3d/extras/particle_example/Terrain3DParticles.tscn") as PackedScene
+	if scn == null:
+		return
+	grass = scn.instantiate()
+	grass.name = "Grass"
+	var gm := (load("res://addons/terrain_3d/extras/particle_example/grass_material.tres") as ShaderMaterial).duplicate(true)
+	gm.shader = load("res://shaders/grass_blade.gdshader")
+	var pm := (load("res://addons/terrain_3d/extras/particle_example/process_material.tres") as ShaderMaterial).duplicate(true)
+	pm.shader = load("res://shaders/grass_particles.gdshader")
+	pm.set_shader_parameter("filter_mask", 3)
+	pm.set_shader_parameter("min_scale", Vector3(0.06, 0.22, 0.06))
+	pm.set_shader_parameter("max_scale", Vector3(0.08, 0.5, 0.08))
+	pm.set_shader_parameter("position_offset", Vector3(0, 0.22, 0))
+	gm.set_shader_parameter("grass_color", Color(0.2, 0.25, 0.09))
+	pm.set_shader_parameter("surface_slope_min", 0.75)
+	grass.set("process_material", pm)
+	grass.set("mesh_material_override", gm)
+	grass.set("terrain", terrain)
+	add_child(grass)
