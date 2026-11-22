@@ -32,6 +32,7 @@ var mode: int = Mode.CHASE_NEAR
 var orbit_yaw := 0.0
 var orbit_pitch := 0.0
 var _orbit_held := false
+var _mouse_idle := 10.0                # seconds since the last mouse look (auto re-centre after 1.5 s)
 var _noise := FastNoiseLite.new()
 var _t := 0.0
 var _dir_yaw := 0.0                  # smoothed heading used by the chase cameras
@@ -104,10 +105,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		next_mode()
 	elif event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_RIGHT:
 		_orbit_held = event.pressed
-	elif event is InputEventMouseMotion and _orbit_held:
+	elif event is InputEventMouseMotion and (_orbit_held or Input.mouse_mode == Input.MOUSE_MODE_CAPTURED):
+		# captured cursor (driving): the mouse looks around / orbits; right-drag still works when free
 		var mm := event as InputEventMouseMotion
 		orbit_yaw -= mm.relative.x * mouse_sensitivity
 		orbit_pitch = clampf(orbit_pitch - mm.relative.y * mouse_sensitivity, -1.2, 1.3)
+		if mode != Mode.CHASE_NEAR and mode != Mode.CHASE_FAR:
+			orbit_yaw = clampf(orbit_yaw, -deg_to_rad(110.0), deg_to_rad(110.0))
+			orbit_pitch = clampf(orbit_pitch, -0.7, 0.6)
+		_mouse_idle = 0.0
 
 
 func _physics_process(_dt: float) -> void:
@@ -144,12 +150,13 @@ func _process(dt: float) -> void:
 	if vehicle == null or not is_instance_valid(vehicle):
 		return
 	_t += dt
+	_mouse_idle += dt
 	# right stick orbit
 	var rs := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X), Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y))
 	if rs.length() > 0.25:
 		orbit_yaw -= rs.x * stick_orbit_speed * dt
 		orbit_pitch = clampf(orbit_pitch - rs.y * stick_orbit_speed * dt, -1.2, 1.3)
-	elif not _orbit_held:
+	elif not _orbit_held and _mouse_idle > 1.5:
 		var k := 1.0 - exp(-dt * 3.0)
 		orbit_yaw = lerp_angle(orbit_yaw, 0.0, k)
 		orbit_pitch = lerpf(orbit_pitch, 0.0, k)

@@ -234,6 +234,7 @@ func _clear_trial() -> void:
 func to_menu() -> void:
 	_clear_trial()
 	get_tree().paused = false
+	_set_mouse_captured(false)
 	if mode != "menu":
 		_free_cam = rig.mode if rig.mode != CameraRig.Mode.CHASE_FAR else _free_cam
 	mode = "menu"
@@ -248,9 +249,23 @@ func to_menu() -> void:
 	menus.show_main()
 
 
+func _set_mouse_captured(on: bool) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if on else Input.MOUSE_MODE_VISIBLE
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_set_mouse_captured(false)
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN and (mode == "free" or mode == "trial") and not get_tree().paused:
+		_set_mouse_captured(true)
+
+
 func _enter_play() -> void:
 	_clear_trial()
 	get_tree().paused = false
+	_set_mouse_captured(true)
 	menus.hide_all()
 	hud.visible = true
 	if controller != null:
@@ -309,12 +324,14 @@ func pause() -> void:
 	if mode == "menu" or get_tree().paused:
 		return
 	get_tree().paused = true
+	_set_mouse_captured(false)
 	menus.show_pause(mode == "trial")
 
 
 func resume() -> void:
 	get_tree().paused = false
 	menus.hide_all()
+	_set_mouse_captured(true)
 
 
 var _rec_fx: AudioEffectRecord
