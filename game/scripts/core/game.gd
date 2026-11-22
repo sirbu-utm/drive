@@ -78,7 +78,7 @@ func _ready() -> void:
 	rig.mode_changed.connect(func(n: String): hud.show_toast(n))
 	if args.has("autopilot"):
 		autopilot = Autopilot.new(net, String(args["autopilot"]), 1, int(args.get("idx", "20")), float(args.get("speed", "45")), 0.7)
-	if not args.has("autopilot") or menu_start or args.has("trial"):
+	if not args.has("autopilot") or menu_start:
 		controller = PlayerController.new()
 		controller.vehicle = car
 		controller.reset_requested.connect(respawn)
@@ -98,6 +98,12 @@ func _ready() -> void:
 		start_trial(String(args["trial"]))
 	if args.has("ui"):
 		_debug_ui.call_deferred()
+	if args.has("audio-rec"):
+		_rec_fx = AudioEffectRecord.new()
+		AudioServer.add_bus_effect(0, _rec_fx)
+		_rec_fx.set_recording_active(true)
+		if controller != null:
+			controller.enabled = false
 	if args.has("bench"):
 		var b := Benchmark.new()
 		b.name = "Benchmark"
@@ -273,6 +279,10 @@ func start_trial(route: String) -> void:
 	add_child(trial)
 	trial.setup(self, route)
 	_make_trial_autopilot()
+	if args.has("trial-quit"):
+		trial.lap_done.connect(func(t: float, nb: bool, valid: bool):
+			print("TRIAL DONE %s time %.3f new_best %s valid %s" % [route, t, str(nb), str(valid)])
+			get_tree().quit())
 	_hud_layer = CanvasLayer.new()
 	_hud_layer.layer = 21
 	add_child(_hud_layer)
@@ -307,7 +317,37 @@ func resume() -> void:
 	menus.hide_all()
 
 
-func _physics_process(_dt: float) -> void:
+var _rec_fx: AudioEffectRecord
+var _demo_t := 0.0
+
+## --audio-rec=path.wav --demo=pull : scripted standing-start pull (idle, full throttle through the gears, lift for overrun pops, stab of throttle)
+## recorded from the Master bus for the spectrogram check (scripts/audio/spectro.py)
+func _demo_pull(dt: float) -> void:
+	_demo_t += dt
+	var t := _demo_t
+	var thr := 0.0
+	var brk := 0.0
+	if t > 1.5 and t < 9.0:
+		thr = 1.0
+	elif t >= 9.0 and t < 11.0:
+		thr = 0.0
+	elif t >= 11.0 and t < 12.5:
+		thr = 0.55
+	elif t >= 12.5:
+		brk = 0.8
+	car.drive(thr, brk, 0.0, 0.0)
+
+
+func _physics_process(dt: float) -> void:
+	if args.get("demo", "") == "pull":
+		_demo_pull(dt)
+		if _rec_fx != null and _demo_t > float(args.get("audio-rec-seconds", "15")):
+			var rec := _rec_fx.get_recording()
+			if rec != null:
+				rec.save_to_wav(String(args["audio-rec"]))
+				print("AUDIO REC saved %s (%.1f s)" % [args["audio-rec"], rec.get_length()])
+			get_tree().quit()
+		return
 	if autopilot != null:
 		var c := autopilot.update(car)
 		car.drive(c.x, c.y, c.z)

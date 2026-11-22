@@ -241,6 +241,9 @@ func _physics_process(dt: float) -> void:
 	if state == State.FINISHED:
 		return
 	var pos := car.global_position
+	if game.args.has("trial-debug") and Engine.get_physics_frames() % 480 == 0:
+		var n := net.nearest(pos)
+		print("TRIAL dbg state=%d lap_t=%.1f next_gate=%d idx=%d speed=%.1f splits=%d thr=%.2f brk=%.2f gear=%d rpm=%.0f pos=%s hb=%.2f ap=%s" % [state, lap_time, next_gate, n["i"], car.speed, splits.size(), car.throttle, car.brake, car.gear, car.rpm, str(pos), car.handbrake, str(game.autopilot)])
 	if not _have_prev:
 		_prev_pos = pos
 		_have_prev = true

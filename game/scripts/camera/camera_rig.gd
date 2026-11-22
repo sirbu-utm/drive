@@ -48,6 +48,9 @@ var _attr_mounted: CameraAttributesPractical
 
 func _ready() -> void:
 	top_level = true
+	# The rig is moved every rendered frame in _process from the car's *interpolated* transform, so it must not be
+	# physics-interpolated itself (with INHERIT it was blended between 240 Hz ticks -> on-screen judder of the car).
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	camera = Camera3D.new()
 	camera.name = "Camera"
 	camera.far = 12000.0
@@ -65,6 +68,7 @@ func _ready() -> void:
 	_attr_mounted.auto_exposure_scale = 0.35
 	_attr_mounted.auto_exposure_speed = 20.0
 	camera.attributes = _attr_chase
+	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF     # the rig follows the interpolated car transform itself
 	add_child(camera)
 	camera.current = true
 	_noise.seed = 7
