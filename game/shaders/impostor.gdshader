@@ -15,7 +15,8 @@ uniform int rows = 6;
 uniform vec3 centre = vec3(0.0, 2.5, 0.0);
 uniform float alpha_cut : hint_range(0.0, 1.0) = 0.42;
 uniform vec3 tint : source_color = vec3(1.0);
-uniform float translucency : hint_range(0.0, 1.0) = 0.35;
+uniform float translucency : hint_range(0.0, 1.0) = 0.22;
+uniform float shadow_floor : hint_range(0.0, 1.0) = 0.5;   // foliage on a flat card never goes fully black in shadow
 uniform float wind_strength = 0.06;
 
 varying vec3 q_obj;        // point on the billboard plane, object space, relative to centre
@@ -106,7 +107,18 @@ void fragment() {
 	NORMAL = normalize((VIEW_MATRIX * (MODEL_MATRIX * vec4(n_obj, 0.0))).xyz);
 	ROUGHNESS = 0.85;
 	SPECULAR = 0.25;
-	BACKLIGHT = ALBEDO * translucency;
 	ALPHA = cov;
 	ALPHA_SCISSOR_THRESHOLD = alpha_cut;
+}
+
+
+// Foliage lighting for a flat card: wrapped diffuse, softened shadows (a canopy lets light through, and a hard
+// shadow-map stencil on a billboard reads as black blotches), plus forward-scattered translucency.
+void light() {
+	float ndl = dot(NORMAL, LIGHT);
+	float wrap = clamp((ndl + 0.4) / 1.4, 0.0, 1.0);
+	float shadow = mix(shadow_floor, 1.0, ATTENUATION);
+	DIFFUSE_LIGHT += LIGHT_COLOR * wrap * shadow / PI;
+	float back = pow(clamp(dot(VIEW, -LIGHT), 0.0, 1.0), 4.0);
+	DIFFUSE_LIGHT += LIGHT_COLOR * back * translucency * shadow / PI;
 }
