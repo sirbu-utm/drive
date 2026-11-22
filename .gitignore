@@ -8,3 +8,9 @@ __pycache__/
 .venv/
 # raw source archives (kept locally only)
 koenigsegg-ccgt.zip
+
+# raw film-quality source models (multi-GB); game-ready versions are baked by pipeline/vegetation
+assets_src/polyhaven_models/
+# generated world data (rebuild with scripts/build_world.sh)
+game/assets/world/gen/*
+!game/assets/world/gen/roads.json

@@ -1,0 +1,93 @@
+[gd_resource type="Terrain3DAssets" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/rocky_terrain_02_alb_h.res" id="1_1ravv"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/rocky_terrain_02_nrm_r.res" id="2_m0ces"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/leafy_grass_alb_h.res" id="3_ic4aq"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/leafy_grass_nrm_r.res" id="4_08c50"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/mossy_rock_alb_h.res" id="5_5qp6p"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/mossy_rock_nrm_r.res" id="6_cpjvv"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/rocky_trail_alb_h.res" id="7_patrf"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/rocky_trail_nrm_r.res" id="8_jrti6"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/dirt_floor_alb_h.res" id="9_adx43"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/dirt_floor_nrm_r.res" id="10_4p0rj"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/coast_sand_01_alb_h.res" id="11_gjbu5"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/coast_sand_01_nrm_r.res" id="12_x5xi6"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/gravel_floor_02_alb_h.res" id="13_87jo8"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/gravel_floor_02_nrm_r.res" id="14_52a4m"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/brown_mud_leaves_01_alb_h.res" id="15_bt64w"]
+[ext_resource type="Texture2D" path="res://assets/world/terrain_tex/brown_mud_leaves_01_nrm_r.res" id="16_ul7xw"]
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_g1mxh"]
+name = "grass"
+albedo_texture = ExtResource("1_1ravv")
+normal_texture = ExtResource("2_m0ces")
+detiling_rotation = 0.35
+detiling_shift = 0.4
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_6somy"]
+name = "meadow"
+id = 1
+albedo_texture = ExtResource("3_ic4aq")
+normal_texture = ExtResource("4_08c50")
+uv_scale = 0.08
+detiling_rotation = 0.35
+detiling_shift = 0.4
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_55kxb"]
+name = "rock"
+id = 2
+albedo_texture = ExtResource("5_5qp6p")
+normal_texture = ExtResource("6_cpjvv")
+normal_depth = 1.3
+uv_scale = 0.04
+detiling_rotation = 0.35
+detiling_shift = 0.4
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_ji6ro"]
+name = "scree"
+id = 3
+albedo_texture = ExtResource("7_patrf")
+normal_texture = ExtResource("8_jrti6")
+uv_scale = 0.07
+detiling_rotation = 0.35
+detiling_shift = 0.4
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_0xobo"]
+name = "dirt"
+id = 4
+albedo_texture = ExtResource("9_adx43")
+normal_texture = ExtResource("10_4p0rj")
+uv_scale = 0.12
+detiling_rotation = 0.35
+detiling_shift = 0.4
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_a86x3"]
+name = "sand"
+id = 5
+albedo_texture = ExtResource("11_gjbu5")
+normal_texture = ExtResource("12_x5xi6")
+normal_depth = 0.8
+uv_scale = 0.09
+detiling_rotation = 0.35
+detiling_shift = 0.4
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_4oyif"]
+name = "gravel"
+id = 6
+albedo_texture = ExtResource("13_87jo8")
+normal_texture = ExtResource("14_52a4m")
+uv_scale = 0.22
+detiling_rotation = 0.35
+detiling_shift = 0.4
+
+[sub_resource type="Terrain3DTextureAsset" id="Terrain3DTextureAsset_jbxqn"]
+name = "forest"
+id = 7
+albedo_color = Color(0.8, 0.86, 0.74, 1)
+albedo_texture = ExtResource("15_bt64w")
+normal_texture = ExtResource("16_ul7xw")
+detiling_rotation = 0.35
+detiling_shift = 0.4
+
+[resource]
+texture_list = Array[Terrain3DTextureAsset]([SubResource("Terrain3DTextureAsset_g1mxh"), SubResource("Terrain3DTextureAsset_6somy"), SubResource("Terrain3DTextureAsset_55kxb"), SubResource("Terrain3DTextureAsset_ji6ro"), SubResource("Terrain3DTextureAsset_0xobo"), SubResource("Terrain3DTextureAsset_a86x3"), SubResource("Terrain3DTextureAsset_4oyif"), SubResource("Terrain3DTextureAsset_jbxqn")])

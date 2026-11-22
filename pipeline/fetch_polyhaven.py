@@ -51,7 +51,7 @@ def credit(name, kind):
 def fetch_texture(name, res):
     files = get_json(f"{API}/files/{name}")
     out = os.path.join(ROOT, "game", "assets", "textures", name)
-    for key, tag in (("Diffuse", "diff"), ("nor_gl", "nor_gl"), ("arm", "arm")):
+    for key, tag in (("Diffuse", "diff"), ("nor_gl", "nor_gl"), ("arm", "arm"), ("Displacement", "disp")):
         if key not in files:
             print(f"  {name}: no {key}")
             continue
@@ -64,7 +64,7 @@ def fetch_texture(name, res):
 def fetch_model(name, res):
     files = get_json(f"{API}/files/{name}")
     g = files["gltf"][res]["gltf"]
-    out = os.path.join(ROOT, "game", "assets", "vegetation", name)
+    out = os.path.join(ROOT, "assets_src", "polyhaven_models", name)
     download(g["url"], os.path.join(out, os.path.basename(g["url"])))
     for rel, inc in g.get("include", {}).items():
         download(inc["url"], os.path.join(out, rel))
