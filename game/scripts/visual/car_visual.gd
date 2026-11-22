@@ -28,6 +28,11 @@ const SHADERS := {
 	"tire": preload("res://shaders/tire.gdshader"),
 }
 
+const CAR_LAYER := 2          # render layer bit 2: the car itself
+const GRASS_LAYER := 4        # render layer bit 3: GPU grass (too costly for the probe)
+@export var reflection_quality: int = 2
+var _probe: ReflectionProbe
+var driver: DriverRig
 var model: Node3D
 var wheels := {}
 var calipers := {}
@@ -56,6 +61,23 @@ func _ready() -> void:
 	var fx := CarEffects.new()
 	fx.name = "Effects"
 	add_child(fx)
+	# driver + steering wheel
+	var meta_path := "res://assets/cars/ccgt/ccgt_meta.json"
+	var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(meta_path)) if FileAccess.file_exists(meta_path) else {}
+	driver = DriverRig.new()
+	driver.name = "Driver"
+	model.add_child(driver)
+	driver.setup(model, meta)
+	# car meshes on render layer 2 so the car's own reflection probe can skip them
+	for gi in find_children("*", "GeometryInstance3D", true, false):
+		(gi as GeometryInstance3D).layers = CAR_LAYER
+	_make_reflection_probe()
+	set_reflection_quality(reflection_quality)
+	# the car's own lamps light the road, not the car/driver (red brake glow was tinting the cabin)
+	if _brake_glow:
+		_brake_glow.light_cull_mask = 0xFFFFF & ~CAR_LAYER
+	for s in _head_lights:
+		s.light_cull_mask = 0xFFFFF & ~CAR_LAYER
 
 
 # ------------------------------------------------------------------------------------------------
@@ -221,6 +243,33 @@ func set_disc_heat(wheel_id: String, heat: float) -> void:
 	var w: Node = wheels.get(wheel_id)
 	if w is GeometryInstance3D:
 		(w as GeometryInstance3D).set_instance_shader_parameter("heat", clampf(heat, 0.0, 1.0))
+
+
+## Real-time reflections of the surroundings on the paint/glass (the sky alone looks flat).
+## 0 = off, 1 = low (shorter range), 2 = high.
+func set_reflection_quality(q: int) -> void:
+	reflection_quality = clampi(q, 0, 2)
+	if _probe == null:
+		return
+	_probe.visible = reflection_quality > 0
+	_probe.max_distance = 140.0 if reflection_quality == 1 else 420.0
+	_probe.mesh_lod_threshold = 8.0 if reflection_quality == 1 else 3.0
+
+
+func _make_reflection_probe() -> void:
+	_probe = ReflectionProbe.new()
+	_probe.name = "ReflectionProbe"
+	_probe.update_mode = ReflectionProbe.UPDATE_ALWAYS
+	_probe.size = Vector3(9.0, 5.0, 9.0)
+	_probe.position = Vector3(0, 0.8, 0)
+	_probe.box_projection = false
+	_probe.interior = false
+	_probe.enable_shadows = false
+	_probe.ambient_mode = ReflectionProbe.AMBIENT_DISABLED
+	_probe.intensity = 1.0
+	_probe.blend_distance = 1.0
+	_probe.cull_mask = 0xFFFFF & ~CAR_LAYER & ~GRASS_LAYER
+	add_child(_probe)
 
 
 func set_paint(color: Color, flop: Color = Color(-1, -1, -1)) -> void:

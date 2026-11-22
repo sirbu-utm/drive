@@ -118,7 +118,7 @@ func _build_terrain(world: Node3D) -> Node3D:
 	mat.dual_scaling_enabled = true
 	mat.macro_variation_enabled = true
 	mat.projection_enabled = true
-	mat.texture_filtering = Terrain3DMaterial.LINEAR
+	mat.texture_filtering = Terrain3DMaterial.LINEAR_ANISOTROPIC
 	ResourceSaver.save(mat, OUT + "terrain_material.tres")
 	t.material = load(OUT + "terrain_material.tres")
 

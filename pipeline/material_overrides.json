@@ -1,6 +1,15 @@
 {
   "_comment": "Manual fixes for the heuristics in build_car.py. Keys are body part ids (index-connected components of the body OBJ, see build/car_debug/parts.json), values are material classes / output nodes. wheel_parts: ids of the wheel OBJ components.",
   "parts": {},
-  "nodes": {},
-  "wheel_parts": {}
+  "nodes": {
+    "367": "SteeringWheel",
+    "360": "SteeringWheel",
+    "361": "SteeringWheel",
+    "362": "SteeringWheel",
+    "364": "SteeringWheel",
+    "365": "SteeringWheel",
+    "366": "SteeringWheel"
+  },
+  "wheel_parts": {},
+  "steering_rim_part": 367
 }

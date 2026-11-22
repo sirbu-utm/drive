@@ -2,7 +2,7 @@
 
 [resource]
 world_background = 0
-texture_filtering = 1
+texture_filtering = 0
 dual_scaling_enabled = true
 macro_variation_enabled = true
 projection_enabled = true

@@ -167,6 +167,17 @@ func _create_grass() -> void:
 	grass.set("mesh_material_override", gm)
 	grass.set("terrain", terrain)
 	add_child(grass)
+	_tag_grass_layers.call_deferred()
+
+
+func _tag_grass_layers() -> void:
+	# keep grass out of the car's reflection probe (render layer bit 3)
+	for i in 3:
+		if grass == null:
+			return
+		for p in grass.find_children("*", "GPUParticles3D", true, false):
+			(p as GeometryInstance3D).layers = 4
+		await get_tree().create_timer(1.0).timeout
 
 
 ## Per-pixel motion blur (Guertin-style, sphynx-owner Godot-Motion-Blur-Addon, MIT) as a compositor effect.
@@ -174,15 +185,35 @@ func _create_grass() -> void:
 var motion_blur: CompositorEffect
 
 func _setup_motion_blur() -> void:
-	var scr := load("res://addons/godot-motion-blur/guertin/guertin_motion_blur.gd")
-	if scr == null:
-		return
-	motion_blur = scr.new()
-	motion_blur.set("intensity", 0.55)
-	# framerate_independent (default on) simulates a fixed shutter at any fps; Movie Maker renders slower than
-	# real time, so captured frames show almost no blur — that's expected, real play is blurred.
-	motion_blur.set("samples", 6)
-	motion_blur.set("multiplier_camera_rotation", 0.15)
 	var comp := Compositor.new()
-	comp.compositor_effects = [motion_blur]
+	var effects: Array[CompositorEffect] = []
+	sharpen = SharpenEffect.new()
+	sharpen.sharpness = 0.4
+	if not OS.get_cmdline_user_args().has("--nosharpen"):
+		effects.append(sharpen)
+	var scr := load("res://addons/godot-motion-blur/guertin/guertin_motion_blur.gd")
+	if scr != null:
+		motion_blur = scr.new()
+		motion_blur.set("intensity", 0.3)
+		# framerate_independent (default on) simulates a fixed shutter at any fps; Movie Maker renders slower than
+		# real time, so captured frames show almost no blur — that's expected, real play is blurred.
+		motion_blur.set("samples", 6)
+		motion_blur.set("multiplier_camera_rotation", 0.12)
+		effects.append(motion_blur)
+	comp.compositor_effects = effects
 	sky.world_env.compositor = comp
+
+
+var sharpen: SharpenEffect
+
+## 0 = off .. 1 = strong (used by the settings menu)
+func set_motion_blur(strength: float) -> void:
+	if motion_blur:
+		motion_blur.enabled = strength > 0.01
+		motion_blur.set("intensity", clampf(strength, 0.0, 1.0))
+
+
+func set_sharpen(amount: float) -> void:
+	if sharpen:
+		sharpen.enabled = amount > 0.01
+		sharpen.sharpness = clampf(amount, 0.0, 1.0)

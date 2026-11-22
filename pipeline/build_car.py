@@ -621,6 +621,7 @@ def main():
 
     # Mirrors / taillights / other named nodes found in classification
     named = sorted(set(tri_node.tolist()) - {"Body"})
+    steer_meta = {}
     for nm in named:
         m = sel(nm)
         t_n = body.tris[m]
@@ -628,6 +629,19 @@ def main():
         piv = pts.mean(0)
         if nm.startswith("Mirror"):
             piv[2] = pts[:, 2].min()          # pivot at the base of the stalk
+        if nm == "SteeringWheel":
+            # pivot = centre of the rim, axis = rim-plane normal (PCA), pointing back towards the driver
+            rim_id = ov.get("steering_rim_part", 367)
+            rim_pts = co_f[np.unique(body.tris[comp == rim_id])]
+            c = 0.5 * (rim_pts.min(0) + rim_pts.max(0))
+            u, sv, vt = np.linalg.svd(rim_pts - c, full_matrices=False)
+            axis = vt[2] / np.linalg.norm(vt[2])
+            if axis[1] > 0:
+                axis = -axis
+            radial = rim_pts - c
+            radial -= np.outer(radial @ axis, axis)
+            steer_meta.update(center=to_godot(c), axis=to_godot(axis), radius=float(np.linalg.norm(radial, axis=1).max()))
+            piv = c
         objs[nm] = make_object(nm, co_f, t_n, ln_f[m], tri_cls[m], uv=box_uv(co_f, t_n), pivot=piv, parent=root)
 
     # Wing
@@ -726,6 +740,7 @@ def main():
                 for k, v in wheel_pos.items()},
         hub_height=float(R), ground_clearance=float(bb_lo[2]),
         markers={o.name: to_godot(o.location) for o in bpy.data.objects if o.type == "EMPTY" and o.name != "CCGT"},
+        steering_wheel=steer_meta,
         bbox_min=to_godot(bb_lo), bbox_max=to_godot(bb_hi),
         size=dict(width=float(bb_hi[0] - bb_lo[0]), length=float(bb_hi[1] - bb_lo[1]), height=float(bb_hi[2])),
         nodes=sorted(o.name for o in objs.values()) + ["Headlight_L", "Headlight_R", "Exhaust_L", "Exhaust_R"],
