@@ -53,6 +53,9 @@ func _ready() -> void:
 	_make_lamps()
 	set_headlights(headlights_on)
 	set_brake(0.0)
+	var fx := CarEffects.new()
+	fx.name = "Effects"
+	add_child(fx)
 
 
 # ------------------------------------------------------------------------------------------------
